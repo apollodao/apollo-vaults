@@ -131,7 +131,7 @@ where
             .pool_id;
         OsmosisPool::unchecked(pool_id)
     });
-    let reward2_token = reward2_pool_liquidity.clone().map(|liquidity| {
+    let reward2_token = reward2_pool_liquidity.map(|liquidity| {
         liquidity
             .iter()
             .find(|x| x.denom != reward_liquidation_target)
@@ -181,7 +181,7 @@ where
             .execute_cosmos_msgs::<MsgExecuteContractResponse>(&[msg], admin)
             .unwrap();
     };
-    update_path_for_reward_pool(reward1_token.clone(), Pool::Osmosis(reward1_pool));
+    update_path_for_reward_pool(reward1_token, Pool::Osmosis(reward1_pool));
     if let Some(reward2_token) = &reward2_token {
         update_path_for_reward_pool(reward2_token.clone(), Pool::Osmosis(reward2_pool.unwrap()));
     }
@@ -192,11 +192,11 @@ where
         .map(|x| AssetInfoUnchecked::Native(x.clone()))
         .collect::<Vec<_>>();
     let config = ConfigUnchecked {
-        force_withdraw_whitelist: vec![force_withdraw_admin.address().clone()],
+        force_withdraw_whitelist: vec![force_withdraw_admin.address()],
         performance_fee: PERFORMANCE_FEE,
         reward_assets,
         reward_liquidation_target: AssetInfoUnchecked::Native(reward_liquidation_target),
-        treasury: treasury.address().clone(),
+        treasury: treasury.address(),
         liquidity_helper: osmosis_liquidity_helper.clone(),
         router: cw_dex_router.clone().into(),
     };
@@ -207,7 +207,7 @@ where
         admin,
         code_ids["osmosis_vault"],
         &InstantiateMsg {
-            admin: admin.address().clone(),
+            admin: admin.address(),
             lockup_duration: 86400u64,
             pool_id: base_pool.pool_id(),
             vault_token_subdenom: "osmosis-vault".to_string(),
@@ -244,7 +244,7 @@ where
     println!(" ------ Contracts -------");
     println!("Vault: {}", vault_addr);
     println!("Liquidity helper: {:?}", osmosis_liquidity_helper);
-    println!("CwDexRouter: {}", cw_dex_router.clone().addr().to_string());
+    println!("CwDexRouter: {}", cw_dex_router.clone().addr());
     println!("-----------------------------------");
 
     (vault_addr, base_token.to_string())
@@ -516,8 +516,8 @@ pub fn test_osmosis_vault_functionality(
         let reward1_denom = &reward_token_denoms[0];
         // Send some reward tokens to vault to simulate reward accruing
         let reward_amount = Uint128::from(100_000_000u128);
-        send_native_coins(&runner, admin, &vault_addr, &reward1_denom, reward_amount);
-        send_native_coins(&runner, admin, &vault_addr, &reward2_denom, reward_amount);
+        send_native_coins(&runner, admin, &vault_addr, reward1_denom, reward_amount);
+        send_native_coins(&runner, admin, &vault_addr, reward2_denom, reward_amount);
 
         // Query treasury reward token balance
         let treasury_reward1_token_balance_before =
@@ -559,13 +559,13 @@ pub fn test_osmosis_vault_functionality(
 
         // Query treasury reward token balance
         let treasury_reward1_token_balance_after =
-            query_token_balance(&runner, &treasury.address(), &reward1_denom);
+            query_token_balance(&runner, &treasury.address(), reward1_denom);
         assert_eq!(
             treasury_reward1_token_balance_after,
             treasury_reward1_token_balance_before + reward_amount * PERFORMANCE_FEE
         );
         let treasury_reward2_token_balance_after =
-            query_token_balance(&runner, &treasury.address(), &reward2_denom);
+            query_token_balance(&runner, &treasury.address(), reward2_denom);
         assert_eq!(
             treasury_reward2_token_balance_after,
             treasury_reward2_token_balance_before + reward_amount * PERFORMANCE_FEE
@@ -612,7 +612,7 @@ pub fn test_osmosis_vault_functionality(
             &vault_addr,
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Lockup(
                 LockupQueryMsg::UnlockingPositions {
-                    owner: user1.address().clone(),
+                    owner: user1.address(),
                     limit: None,
                     start_after: None,
                 },
@@ -697,7 +697,7 @@ pub fn test_osmosis_vault_functionality(
     // Send 3M vault tokens to force_withdraw_admin
     send_native_coins(
         &runner,
-        &user2,
+        user2,
         &force_withdraw_admin.address(),
         &vault_token_denom,
         "3000000000000",
@@ -802,7 +802,7 @@ pub fn test_osmosis_vault_functionality(
             &unlock_msg,
             &[Coin {
                 amount: unlock_amount,
-                denom: vault_token_denom.clone(),
+                denom: vault_token_denom,
             }],
             force_withdraw_admin,
         )
@@ -814,7 +814,7 @@ pub fn test_osmosis_vault_functionality(
             &vault_addr,
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Lockup(
                 LockupQueryMsg::UnlockingPositions {
-                    owner: force_withdraw_admin.address().clone(),
+                    owner: force_withdraw_admin.address(),
                     limit: None,
                     start_after: None,
                 },
@@ -863,7 +863,7 @@ pub fn test_osmosis_vault_functionality(
             &vault_addr,
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Lockup(
                 LockupQueryMsg::UnlockingPositions {
-                    owner: force_withdraw_admin.address().clone(),
+                    owner: force_withdraw_admin.address(),
                     limit: None,
                     start_after: None,
                 },
@@ -908,7 +908,7 @@ pub fn test_osmosis_vault_functionality(
             &vault_addr,
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Lockup(
                 LockupQueryMsg::UnlockingPositions {
-                    owner: force_withdraw_admin.address().clone(),
+                    owner: force_withdraw_admin.address(),
                     limit: None,
                     start_after: None,
                 },

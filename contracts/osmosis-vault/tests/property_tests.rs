@@ -102,7 +102,7 @@ proptest! {
         // Send base tokens to user1, deposit and assert that values are correct and calculate withdraw amount
         let user_vault_token_balance = robot.send_base_tokens(admin, &user1.address(), deposit_amount)
             .deposit(&user1, None, deposit_amount)
-            .query_vault_token_balance(&user1.address()).unwrap();
+            .query_vault_token_balance(&user1.address());
 
 
         // Send reward tokens to user1, assert that reward token balance is correct
