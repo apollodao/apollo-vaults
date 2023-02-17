@@ -9,15 +9,12 @@ mod test_helpers;
 
 use test_helpers::robot::OsmosisVaultRobot;
 
-
 use proptest::prelude::*;
 
 use crate::test_helpers::constants::{
-    INITIAL_BALANCE, STAKE, TEST_CONFIG_PATH, TWO_WEEKS_IN_SECONDS, UATOM, UION, UOSMO,
+    HUNDRED_BITS, INITIAL_BALANCE, SIXTY_FOUR_BITS, STAKE, TEST_CONFIG_PATH, TWO_WEEKS_IN_SECONDS,
+    UATOM, UION, UOSMO,
 };
-
-const SIXTY_FOUR_BITS: u128 = 18446744073709551616u128;
-const HUNDRED_BITS: u128 = 1267650600228229401496703205376u128;
 
 proptest! {
     #![proptest_config(ProptestConfig {
