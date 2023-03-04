@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use apollo_cw_asset::{AssetInfo, AssetInfoUnchecked};
+use apollo_cw_asset::AssetInfoUnchecked;
 use apollo_vault::{
     msg::{ApolloExtensionQueryMsg, ExtensionExecuteMsg, ExtensionQueryMsg, StateResponse},
-    state::{Config, ConfigUnchecked},
+    state::ConfigUnchecked,
 };
 use cosmwasm_std::{Coin, Decimal, Uint128};
 use cw_dex::osmosis::{OsmosisPool, OsmosisStaking};
@@ -141,6 +141,18 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
         )
     }
 
+    pub fn setup(&self, admin: &SigningAccount) -> &Self {
+        self.send_native_tokens(
+            // LP tokens to vault to allow it to create new Locks on unlock
+            // TODO: Remove this after mainnet chain upgrade
+            &admin,
+            &self.vault_addr,
+            1000000u32,
+            self.query_info().base_token,
+        )
+        .whitelist_address_for_force_unlock(&self.vault_addr)
+    }
+
     pub fn query_vault_state(&self) -> StateResponse<OsmosisStaking, OsmosisPool, OsmosisDenom> {
         self.wasm()
             .query(
@@ -250,7 +262,6 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
         amount: Option<Uint128>,
         recipient: Option<String>,
     ) -> &Self {
-        let vault_token_denom = self.query_info().vault_token;
         self.wasm()
             .execute(
                 &self.vault_addr,
@@ -267,11 +278,34 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
             .unwrap();
         self
     }
+
+    pub fn force_redeem(
+        &self,
+        signer: &SigningAccount,
+        amount: Uint128,
+        recipient: Option<String>,
+        funds: &[Coin],
+    ) -> &Self {
+        self.wasm()
+            .execute(
+                &self.vault_addr,
+                &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ForceUnlock(
+                    ForceUnlockExecuteMsg::ForceRedeem { amount, recipient },
+                )),
+                funds,
+                signer,
+            )
+            .unwrap();
+        self
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use cw_it::osmosis::OsmosisPoolType;
+    use cw_it::{
+        const_coin::ConstCoin,
+        osmosis::{ConstOsmosisTestPool, OsmosisPoolType},
+    };
 
     use super::*;
 
@@ -279,6 +313,22 @@ mod tests {
 
     const WASM_FILE_PATH: &str = "target/wasm32-unknown-unknown/release/osmosis_vault.wasm";
     const UOSMO: &str = "uosmo";
+
+    const DEFAULT_POOL: ConstOsmosisTestPool = ConstOsmosisTestPool::new(
+        &[
+            ConstCoin::new(1000000000000, "uosmo"),
+            ConstCoin::new(1000000000000, "uatom"),
+        ],
+        OsmosisPoolType::Basic,
+    );
+
+    #[derive(Clone)]
+    enum Funds {
+        Correct,
+        Insufficient,
+        Excess,
+        TooManyCoins,
+    }
 
     #[test_case(false, false, None, false => panics ; "caller not whitelisted")]
     #[test_case(true, false, None, false ; "lock not expired amount is None recipient is None")]
@@ -295,14 +345,7 @@ mod tests {
         different_recipient: bool,
     ) {
         let app = OsmosisTestApp::new();
-        let pool = OsmosisTestPool::new(
-            vec![
-                Coin::new(1000000000000, "uosmo"),
-                Coin::new(1000000000000, "uatom"),
-            ],
-            OsmosisPoolType::Basic,
-        );
-        let other_user = app.init_account(&[Coin::new(1000000, "uosmo")]).unwrap();
+        let pool: OsmosisTestPool = DEFAULT_POOL.into();
 
         let (robot, admin, mut fwa_admin, _treasury) =
             OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
@@ -314,7 +357,7 @@ mod tests {
                 .unwrap();
         }
         let recipient = match different_recipient {
-            true => Some(other_user.address()),
+            true => Some(app.init_account(&[]).unwrap().address()),
             false => None,
         };
         let increase_time_by = if expired { 3600 * 24 * 15 } else { 0 };
@@ -368,6 +411,90 @@ mod tests {
             robot.assert_number_of_unlocking_position(fwa_admin.address(), 0);
         } else {
             robot.assert_number_of_unlocking_position(fwa_admin.address(), 1);
+        }
+    }
+
+    #[test_case(false, Decimal::percent(100), false, Funds::Correct => panics ; "caller not whitelisted")]
+    #[test_case(true, Decimal::percent(50), false, Funds::Correct ; "caller whitelisted withdraw half")]
+    #[test_case(true, Decimal::percent(100), false, Funds::Correct ; "caller whitelisted withdraw all")]
+    #[test_case(true, Decimal::percent(150), false, Funds::Correct => panics ; "caller whitelisted withdraw too much")]
+    #[test_case(true, Decimal::percent(100), true, Funds::Correct ; "caller whitelisted withdraw all to different recipient")]
+    #[test_case(true, Decimal::percent(100), false, Funds::Insufficient => panics ; "caller whitelisted withdraw all insufficient funds")]
+    #[test_case(true, Decimal::percent(100), false, Funds::Excess => panics ; "caller whitelisted withdraw all excess funds")]
+    #[test_case(true, Decimal::percent(100), false, Funds::TooManyCoins => panics ; "caller whitelisted withdraw all too many coins in funds")]
+    fn force_redeem(
+        whitlisted: bool,
+        withdraw_percent: Decimal,
+        different_recipient: bool,
+        funds_type: Funds,
+    ) {
+        let app = OsmosisTestApp::new();
+        let pool: OsmosisTestPool = DEFAULT_POOL.into();
+
+        let (robot, admin, mut fwa_admin, _treasury) =
+            OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
+
+        if !whitlisted {
+            fwa_admin = app
+                .init_account(&[Coin::new(1000000000000000, UOSMO)])
+                .unwrap();
+        }
+        let recipient = if different_recipient {
+            Some(app.init_account(&[]).unwrap().address())
+        } else {
+            None
+        };
+
+        let base_token_denom = robot.query_info().base_token;
+        let vault_token_denom = robot.query_info().vault_token;
+
+        let initial_base_token_balance = robot
+            .setup(&admin)
+            .join_pool_swap_extern_amount_in(
+                &fwa_admin,
+                robot.base_pool.pool_id(),
+                Coin::new(1000000000, UOSMO),
+                None,
+            )
+            .query_native_token_balance(fwa_admin.address(), &base_token_denom);
+
+        let vault_token_balance = robot
+            .deposit_all(&fwa_admin, None)
+            .query_native_token_balance(fwa_admin.address(), &vault_token_denom);
+
+        let redeem_amount = withdraw_percent * vault_token_balance;
+        let recipient_addr = recipient.clone().unwrap_or(fwa_admin.address());
+        let funds = match funds_type.clone() {
+            Funds::Correct => vec![Coin::new(redeem_amount.u128(), &vault_token_denom)],
+            Funds::Insufficient => vec![Coin::new(1000u128, &vault_token_denom)],
+            Funds::TooManyCoins => vec![
+                Coin::new(redeem_amount.u128(), &vault_token_denom),
+                Coin::new(1000u128, UOSMO),
+            ],
+            Funds::Excess => vec![Coin::new(redeem_amount.u128() + 1000, &vault_token_denom)],
+        };
+
+        robot.force_redeem(&fwa_admin, redeem_amount, recipient, &funds);
+
+        // These assertions are only valid if the funds are correct. Otherwise,
+        // the transaction should fail above.
+        match funds_type {
+            Funds::Correct => {
+                robot
+                    .assert_native_token_balance_eq(
+                        &recipient_addr,
+                        &base_token_denom,
+                        // Since no compounding is done, the amount withdrawn should be
+                        // exactly withdraw_percent of the initial deposit
+                        withdraw_percent * initial_base_token_balance,
+                    )
+                    .assert_native_token_balance_eq(
+                        &recipient_addr,
+                        &vault_token_denom,
+                        vault_token_balance - redeem_amount,
+                    );
+            }
+            _ => {}
         }
     }
 }
