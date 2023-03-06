@@ -175,6 +175,7 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
         signer: &SigningAccount,
         amount: impl Into<Uint128>,
         recipient: Option<String>,
+        funds: &[Coin],
     ) -> &Self {
         let base_token_denom = self.query_info().base_token;
         let amount: Uint128 = amount.into();
@@ -182,7 +183,7 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
             .execute(
                 &self.vault_addr,
                 &ExecuteMsg::Deposit { amount, recipient },
-                &[Coin::new(amount.u128(), base_token_denom)],
+                funds,
                 signer,
             )
             .unwrap();
@@ -193,7 +194,12 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
         let base_token_denom = self.query_info().base_token;
         let amount = self.query_native_token_balance(&signer.address(), &base_token_denom);
 
-        self.deposit(signer, amount, recipient)
+        self.deposit(
+            signer,
+            amount,
+            recipient,
+            &[Coin::new(amount.u128(), base_token_denom)],
+        )
     }
 
     pub fn unlock(&self, signer: &SigningAccount, amount: impl Into<Uint128>) -> &Self {
@@ -302,6 +308,7 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
 
 #[cfg(test)]
 mod tests {
+    use base_vault::DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN;
     use cw_it::{
         const_coin::ConstCoin,
         osmosis::{ConstOsmosisTestPool, OsmosisPoolType},
@@ -496,5 +503,46 @@ mod tests {
             }
             _ => {}
         }
+    }
+
+    #[test_case(false, Funds::Correct ; "normal deposit")]
+    #[test_case(true, Funds::Correct ; "deposit to different recipient")]
+    #[test_case(false, Funds::Insufficient => panics ; "insufficient funds")]
+    #[test_case(false, Funds::Excess => panics ; "excess funds")]
+    #[test_case(false, Funds::TooManyCoins => panics ; "too many coins in funds")]
+    fn deposit(different_recipient: bool, funds: Funds) {
+        let app = OsmosisTestApp::new();
+        let pool: OsmosisTestPool = DEFAULT_POOL.into();
+
+        let (robot, admin, _fwa_admin, _treasury) =
+            OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
+        robot.setup(&admin);
+
+        let recipient = if different_recipient {
+            Some(app.init_account(&[]).unwrap().address())
+        } else {
+            None
+        };
+
+        let vault_token_denom = robot.query_info().vault_token;
+        let base_token_denom = robot.query_info().base_token;
+        let deposit_amount = Uint128::new(1_000_000_000_000_000u128);
+        let funds = match funds {
+            Funds::Correct => vec![Coin::new(deposit_amount.u128(), &base_token_denom)],
+            Funds::Insufficient => vec![Coin::new(deposit_amount.u128() - 1000, &base_token_denom)],
+            Funds::Excess => vec![Coin::new(deposit_amount.u128() + 1000, &base_token_denom)],
+            Funds::TooManyCoins => vec![
+                Coin::new(deposit_amount.u128(), &base_token_denom),
+                Coin::new(1000u128, UOSMO),
+            ],
+        };
+
+        robot
+            .deposit(&admin, deposit_amount, recipient.clone(), &funds)
+            .assert_native_token_balance_eq(
+                recipient.unwrap_or(admin.address()),
+                &vault_token_denom,
+                deposit_amount * DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN,
+            );
     }
 }
