@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use apollo_cw_asset::AssetInfoUnchecked;
-use apollo_utils::iterators::IntoElementwise;
 use apollo_vault::msg::{
     ApolloExtensionExecuteMsg, ApolloExtensionQueryMsg, ExtensionExecuteMsg, ExtensionQueryMsg,
     StateResponse,
@@ -82,7 +81,6 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
             .unwrap();
         let treasury = app.init_account(&[]).unwrap();
         let base_pool_id = base_pool.create(app, &admin);
-        let reward_pool_id = reward_pool.create(app, &admin);
 
         let code_id = upload_wasm_file(app, &admin, wasm_file_path).unwrap();
 
@@ -174,7 +172,6 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
         recipient: Option<String>,
         funds: &[Coin],
     ) -> &Self {
-        let base_token_denom = self.query_info().base_token;
         let amount: Uint128 = amount.into();
         self.wasm()
             .execute(
@@ -537,9 +534,7 @@ mod tests {
     use cosmwasm_std::Timestamp;
     use cw_it::const_coin::ConstCoin;
     use cw_it::osmosis::{ConstOsmosisTestPool, OsmosisPoolType};
-    use cw_it::osmosis_test_tube::RunnerExecuteResult;
     use cw_utils::Expiration;
-    use osmosis_testing::cosmrs::proto::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 
     use super::*;
 
@@ -567,19 +562,22 @@ mod tests {
         TooManyCoins,
     }
 
-    #[test_case(false, false, None, false => panics ; "caller not whitelisted")]
-    #[test_case(true, false, None, false ; "lock not expired amount is None recipient is None")]
-    #[test_case(true, false, None, true ; "lock not expired amount is None recipient is Some")]
-    #[test_case(true, false, Some(Decimal::zero()), false => panics ; "lock not expired amount is Some(0) recipient is none")]
-    #[test_case(true, false, Some(Decimal::percent(50)), false ; "lock not expired amount is Some(50%) recipient is none")]
-    #[test_case(true, false, Some(Decimal::percent(100)), false ; "lock not expired amount is Some(100%) recipient is none")]
-    #[test_case(true, false, Some(Decimal::percent(150)), false => panics ; "lock not expired amount is Some(150%) recipient is none")]
-    #[test_case(true, true, None, false => ; "lock is expired amount is None recipient is None")]
+    //TODO: multiple simultaneous unlocking positions
+    #[test_case(false, false, None, false, false => panics ; "caller not whitelisted")]
+    #[test_case(true, false, None, false, false ; "lock not expired amount is None recipient is None")]
+    #[test_case(true, false, None, true, false ; "lock not expired amount is None recipient is Some")]
+    #[test_case(true, false, Some(Decimal::zero()), false, false => panics ; "lock not expired amount is Some(0) recipient is none")]
+    #[test_case(true, false, Some(Decimal::percent(50)), false, false ; "lock not expired amount is Some(50%) recipient is none")]
+    #[test_case(true, false, Some(Decimal::percent(100)), false, false ; "lock not expired amount is Some(100%) recipient is none")]
+    #[test_case(true, false, Some(Decimal::percent(150)), false, false => panics ; "lock not expired amount is Some(150%) recipient is none")]
+    #[test_case(true, true, None, false, false => ; "lock is expired amount is None recipient is None")]
+    #[test_case(true, true, None, false, true => ; "lock is expired amount is None recipient is None multiple unlocking positions")]
     fn force_withdraw_unlocking(
         whitlisted: bool,
         expired: bool,
         force_unlock_amount: Option<Decimal>,
         different_recipient: bool,
+        multiple_unlocking_positions: bool,
     ) {
         let app = OsmosisTestApp::new();
         let pool: OsmosisTestPool = DEFAULT_POOL.into();
@@ -601,7 +599,7 @@ mod tests {
 
         println!("Whitelisting address: {}", fwa_admin.address());
 
-        let unlocking_pos = &robot
+        robot
             .send_native_tokens(
                 // LP tokens to vault to allow it to create new Locks on unlock
                 // TODO: Remove this after mainnet chain upgrade
@@ -618,7 +616,13 @@ mod tests {
                 None,
             )
             .deposit_all(&fwa_admin, None)
-            .unlock_all(&fwa_admin)
+            .unlock_all(&fwa_admin);
+
+        if multiple_unlocking_positions {
+            robot.deposit_all(&admin, None).unlock_all(&admin);
+        }
+
+        let unlocking_pos = &robot
             .assert_number_of_unlocking_position(fwa_admin.address(), 1)
             .query_unlocking_positions(fwa_admin.address())[0];
 
@@ -929,7 +933,7 @@ mod tests {
             OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
         robot.setup(&admin);
 
-        let recipient = recipient.map(|s| fwa_admin.address());
+        let recipient = recipient.map(|_| fwa_admin.address());
         robot.deposit_all(&admin, None);
 
         let amount = Uint128::new(1000000000u128);
