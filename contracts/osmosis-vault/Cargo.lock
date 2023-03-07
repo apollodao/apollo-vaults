@@ -2069,7 +2069,7 @@ dependencies = [
 [[package]]
 name = "osmosis-test-tube"
 version = "14.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?rev=81e3cc2a360e9229449c3642e09eec656f7a83a7#81e3cc2a360e9229449c3642e09eec656f7a83a7"
+source = "git+https://github.com/apollodao/test-tube.git?rev=f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1#f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1"
 dependencies = [
  "base64",
  "bindgen",
@@ -2114,6 +2114,7 @@ dependencies = [
  "cw-dex",
  "cw-dex-router",
  "cw-it",
+ "cw-utils",
  "cw-vault-standard",
  "cw-vault-token",
  "cw2",
@@ -3140,7 +3141,7 @@ dependencies = [
 [[package]]
 name = "test-tube"
 version = "0.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?rev=81e3cc2a360e9229449c3642e09eec656f7a83a7#81e3cc2a360e9229449c3642e09eec656f7a83a7"
+source = "git+https://github.com/apollodao/test-tube.git?rev=f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1#f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1"
 dependencies = [
  "base64",
  "cosmrs",
