@@ -46,7 +46,7 @@ apollo-utils = "0.1.0"
 
 [dev-dependencies]
 osmosis-testing = { git = "https://github.com/apollodao/osmosis-rust.git", rev = "430236bd63f26d618e11e59709a56c808c4d427c" }
-cw-it = { path = "../../../cw-it/" }
+cw-it = { git = "https://github.com/apollodao/cw-it.git", rev = "23f3a53a8df20d92496a77bd8288e39d06a812b8", features = ["osmosis"] }
 test-case = "2.2.2"
 liquidity-helper = "0.1.0"
 cw-dex-router = { version = "0.1.0", features = ["library","osmosis"] }
