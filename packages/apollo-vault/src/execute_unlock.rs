@@ -16,10 +16,6 @@ use osmosis_std::types::osmosis::lockup::MsgLockTokens;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-/// Temporary reply id for the workaround to get the lock id of unlocking positions.
-pub const OSMOSIS_TEMP_WORKAROUND_LOCK_TOKENS_REPLY_ID: u64 = 932;
-const DURATION_COUNTER: Item<i32> = Item::new("duration_counter");
-
 /// ExecuteMsg handlers related to vaults that have a lockup. Here we have the
 /// trait bound Unlock on the S generic.
 impl<S, P, V> AutocompoundingVault<'_, S, P, V>
@@ -84,27 +80,6 @@ where
     ) -> Result<Response, ContractError> {
         let vault_token = self.base_vault.vault_token.load(deps.storage)?;
 
-        // WARNING!!! THIS IS A HACK TO GET THE UNLOCKING POSITION ID
-        // Create a new unlocking position with a new duration. This will be called as a submessage
-        // and is handled in the reply handler to get the id of the new unlocking position, which
-        // will be the id of the new lock minus one. To ensure that a new lock is created, we need
-        // to create a lock tokens with a new duration that has not been used before by the vault.
-        //
-        // A proper solution will be possible after the next chain upgrade, around 2023-03-13.
-
-        let base_token_denom = self.base_vault.base_token.load(deps.storage)?.to_string();
-        let duration_count = DURATION_COUNTER.load(deps.storage).unwrap_or_default() + 1;
-        DURATION_COUNTER.save(deps.storage, &duration_count)?;
-
-        let create_new_lock_msg = MsgLockTokens {
-            owner: env.contract.address.to_string(),
-            duration: Some(Duration {
-                seconds: 0,
-                nanos: duration_count,
-            }),
-            coins: vec![Coin::new(1u128, base_token_denom).into()],
-        };
-
         // Receive the vault token to the contract's balance, or validate that it was
         // already received
         vault_token.receive(deps.branch(), &env, info, vault_token_amount)?;
@@ -130,10 +105,6 @@ where
 
         Ok(compound_res
             .add_message(unlock_msg)
-            .add_submessage(SubMsg::reply_on_success(
-                create_new_lock_msg,
-                OSMOSIS_TEMP_WORKAROUND_LOCK_TOKENS_REPLY_ID,
-            ))
             .add_message(store_claim_msg)
             .add_event(event))
     }

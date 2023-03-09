@@ -1,5 +1,4 @@
 use apollo_vault::error::ContractError;
-use apollo_vault::execute_unlock::OSMOSIS_TEMP_WORKAROUND_LOCK_TOKENS_REPLY_ID;
 use apollo_vault::msg::{
     ApolloExtensionExecuteMsg, ApolloExtensionQueryMsg, CallbackMsg, ExtensionExecuteMsg,
     ExtensionQueryMsg,
@@ -21,7 +20,7 @@ use cw_vault_standard::extensions::force_unlock::ForceUnlockExecuteMsg;
 use cw_vault_standard::extensions::lockup::{LockupExecuteMsg, LockupQueryMsg};
 use cw_vault_standard::msg::{VaultInfoResponse, VaultStandardInfoResponse};
 use cw_vault_token::osmosis::OsmosisDenom;
-use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
+use osmosis_std::types::osmosis::lockup::{MsgBeginUnlockingResponse, MsgLockTokensResponse};
 use semver::Version;
 
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -257,27 +256,31 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
                 let mut staking = contract.staking.load(deps.storage)?;
                 staking.lock_id = Some(res.id);
                 contract.staking.save(deps.storage, &staking)?;
-                Ok(Response::default())
+
+                let event = Event::new("apollo/vault/lock/reply")
+                    .add_attribute("vault_type", "osmosis")
+                    .add_attribute("lock_id", res.id.to_string());
+                Ok(Response::default().add_event(event))
             }
-            OSMOSIS_UNLOCK_TOKENS_REPLY_ID => Ok(Response::default()),
-            OSMOSIS_TEMP_WORKAROUND_LOCK_TOKENS_REPLY_ID => {
-                let res: MsgLockTokensResponse = b.try_into().map_err(ContractError::Std)?;
+            OSMOSIS_UNLOCK_TOKENS_REPLY_ID => {
+                let res: MsgBeginUnlockingResponse = b.try_into().map_err(ContractError::Std)?;
 
                 let mut pending_claim = contract.claims.get_pending_claim(deps.storage)?;
-                pending_claim.id = res.id - 1;
+                pending_claim.id = res.unlocking_lock_id;
                 contract
                     .claims
                     .set_pending_claim(deps.storage, &pending_claim)?;
 
                 let event = Event::new("apollo/vault/unlock/reply")
                     .add_attribute("vault_type", "osmosis")
-                    .add_attribute("lock_id", res.id.to_string());
-                Ok(Response::default().add_event(event))
+                    .add_attribute("lock_id", res.unlocking_lock_id.to_string());
+                let data = to_binary(&res.unlocking_lock_id)?;
+                Ok(Response::default().add_event(event).set_data(data))
             }
             id => Err(ContractError::UnknownReplyId(id)),
         }
     } else {
-        Ok(Response::default())
+        Err(ContractError::NoDataInSubMsgResponse {})
     }
 }
 

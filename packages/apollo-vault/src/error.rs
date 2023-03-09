@@ -73,6 +73,9 @@ pub enum ContractError {
         actual: Vec<Coin>,
     },
 
+    #[error("No data in SubMsgResponse")]
+    NoDataInSubMsgResponse {},
+
     #[error("{0}")]
     Generic(String),
 }
