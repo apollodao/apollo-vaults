@@ -741,7 +741,7 @@ dependencies = [
 [[package]]
 name = "cw-it"
 version = "0.1.0"
-source = "git+https://github.com/apollodao/cw-it.git?rev=10e6ed7#10e6ed759b33dd9839c7934c6bf9c5611ab2aeb6"
+source = "git+https://github.com/apollodao/cw-it.git?branch=feat/osmosis-v15.0.0-rc3#305bc77dd9b7548cc9daa3c07f0875c57270c9c8"
 dependencies = [
  "anyhow",
  "apollo-utils",
@@ -2164,14 +2164,14 @@ dependencies = [
 
 [[package]]
 name = "osmosis-test-tube"
-version = "14.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?rev=b599c5c#b599c5c1697e5f8ab2d915c3a8ce33c1a4b9d738"
+version = "15.0.0-rc3"
+source = "git+https://github.com/apollodao/test-tube.git?branch=feat/osmosis-v15.0.0-rc3#da94f8abd696dd236b448c7c6d78013bdbf27d56"
 dependencies = [
  "base64",
  "bindgen",
  "cosmrs",
  "cosmwasm-std",
- "osmosis-std 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "osmosis-std 0.13.2",
  "prost",
  "serde",
  "serde_json",
@@ -3241,7 +3241,7 @@ dependencies = [
 [[package]]
 name = "test-tube"
 version = "0.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?rev=b599c5c#b599c5c1697e5f8ab2d915c3a8ce33c1a4b9d738"
+source = "git+https://github.com/apollodao/test-tube.git?branch=feat/osmosis-v15.0.0-rc3#da94f8abd696dd236b448c7c6d78013bdbf27d56"
 dependencies = [
  "base64",
  "cosmrs",

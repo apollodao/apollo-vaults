@@ -8,7 +8,9 @@ use cw_dex_router::helpers::CwDexRouterUnchecked;
 
 use cw_it::osmosis::robot::OsmosisTestRobot;
 use cw_it::osmosis::OsmosisTestPool;
-use cw_it::osmosis_test_tube::{Account, OsmosisTestApp};
+use cw_it::osmosis_test_tube::{
+    Account, FeeSetting, Module, OsmosisTestApp, Runner, SigningAccount, Wasm,
+};
 use cw_it::robot::TestRobot;
 
 use cw_utils::Expiration;
@@ -68,11 +70,102 @@ fn force_withdraw_unlocking(
     let (robot, admin, mut fwa_admin, _treasury) =
         OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
 
-    // Parse args into message params
-    if !whitlisted {
-        fwa_admin = app
-            .init_account(&[Coin::new(1000000000000000, UOSMO)])
-            .unwrap();
+impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
+    // pub fn new(app: &'a OsmosisTestApp, vault_addr: String) -> Self {
+    //     Self { app, vault_addr }
+    // }
+
+    // pub fn without_rewards(
+    //     app: &'a OsmosisTestApp,
+    //     base_pool: OsmosisTestPool,
+    //     wasm_file_path: &str,
+    // ) -> (Self, &SigningAccount, &SigningAccount, &SigningAccount) {
+    //     Self::with_single_rewards(app, base_pool.clone(), base_pool,
+    // wasm_file_path) }
+
+    // TODO: set up router and liquidity helper
+    pub fn with_single_rewards(
+        app: &'a OsmosisTestApp,
+        base_pool: OsmosisTestPool,
+        reward_pool: OsmosisTestPool,
+        wasm_file_path: &str,
+    ) -> (Self, SigningAccount, SigningAccount, SigningAccount) {
+        let admin = app
+            .init_account(&max_of_all_coins(&[
+                base_pool.liquidity.clone(),
+                reward_pool.liquidity.clone(),
+            ]))
+            .unwrap()
+            .with_fee_setting(FeeSetting::Auto {
+                gas_price: Coin::new(100, "uosmo"),
+                gas_adjustment: 1.5,
+            });
+        println!("admin fee setting: {:?}", admin.fee_setting());
+        let fwa_admin = app
+            .init_account(&max_of_all_coins(&[
+                base_pool.liquidity.clone(),
+                reward_pool.liquidity.clone(),
+            ]))
+            .unwrap()
+            .with_fee_setting(FeeSetting::Auto {
+                gas_price: Coin::new(100, "uosmo"),
+                gas_adjustment: 1.5,
+            });
+        let treasury = app.init_account(&[]).unwrap();
+        let base_pool_id = base_pool.create(app, &admin);
+
+        let code_id = upload_wasm_file(app, &admin, wasm_file_path).unwrap();
+
+        let config = ConfigUnchecked {
+            performance_fee: Decimal::percent(3), //TODO: variable performance fee
+            treasury: treasury.address(),
+            // TODO: Setup router
+            router: CwDexRouterUnchecked::new(app.init_account(&[]).unwrap().address()),
+            reward_assets: vec![AssetInfoUnchecked::native(
+                reward_pool.liquidity[0].denom.clone(),
+            )],
+            reward_liquidation_target: AssetInfoUnchecked::native(
+                base_pool.liquidity[0].denom.clone(),
+            ),
+            force_withdraw_whitelist: vec![fwa_admin.address()],
+            // TODO: Setup liquidity helper
+            liquidity_helper: LiquidityHelperUnchecked::new(
+                app.init_account(&[]).unwrap().address(),
+            ),
+        };
+
+        let init_msg = InstantiateMsg {
+            admin: admin.address(),
+            pool_id: base_pool_id,
+            lockup_duration: 60 * 60 * 24 * 14, // TODO: dont hard code
+            config,
+            vault_token_subdenom: format!("apVault/{base_pool_id}"),
+        };
+
+        let wasm = Wasm::new(app);
+        let vault_addr = wasm
+            .instantiate(
+                code_id,
+                &init_msg,
+                Some(&admin.address()),
+                Some("Apollo Vault"),
+                &[Coin::new(10_000_000u128, "uosmo")],
+                &admin,
+            )
+            .unwrap()
+            .data
+            .address;
+
+        (
+            Self {
+                app,
+                vault_addr,
+                base_pool: OsmosisPool::unchecked(base_pool_id),
+            },
+            admin,
+            fwa_admin,
+            treasury,
+        )
     }
 
     let recipient = match different_recipient {
@@ -550,6 +643,151 @@ fn drop_admin_transfer(caller_is_admin: bool) {
             )
             .unwrap_err();
 
-        robot.assert_admin(admin.address());
+    #[test_case(false => panics ; "caller is not admin")]
+    #[test_case(true ; "caller is admin")]
+    fn update_config(is_admin: bool) {
+        let app = OsmosisTestApp::new();
+        let pool: OsmosisTestPool = DEFAULT_POOL.into();
+
+        let (robot, admin, _fwa_admin, _treasury) =
+            OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
+        robot.setup(&admin);
+
+        let accs = app
+            .init_accounts(&[Coin::new(1000000000u128, UOSMO)], 5)
+            .unwrap();
+
+        let caller = if is_admin { &admin } else { &accs[3] };
+
+        let mut config_updates = ConfigUpdates::default();
+        config_updates
+            .performance_fee(Decimal::percent(50))
+            .treasury(accs[0].address())
+            .router(CwDexRouterUnchecked::new(accs[1].address()))
+            .reward_assets(vec![AssetInfoUnchecked::native(
+                "new_reward_token".to_string(),
+            )])
+            .reward_liquidation_target(AssetInfoUnchecked::native("new_reward_token".to_string()))
+            .force_withdraw_whitelist(vec![])
+            .liquidity_helper(LiquidityHelperUnchecked::new(accs[2].address()));
+
+        robot.update_config(&caller, config_updates.clone());
+
+        // Assertion is only valid if the caller is the admin. Otherwise, the
+        // transaction should fail above.
+        if is_admin {
+            robot.assert_config(config_updates.build().unwrap());
+        }
+    }
+
+    #[test_case(true, true ; "caller is admin and new admin is a valid address")]
+    #[test_case(true, false => panics ; "caller is admin but new admin is invalid address")]
+    #[test_case(false, true => panics ; "caller is not admin")]
+    #[test_case(false, false => panics ; "caller is not admin and new admin is invalid address")]
+    fn update_admin(caller_is_admin: bool, new_admin_is_valid_address: bool) {
+        let app = OsmosisTestApp::new();
+        let pool: OsmosisTestPool = DEFAULT_POOL.into();
+
+        let (robot, admin, _fwa_admin, _treasury) =
+            OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
+        robot.setup(&admin);
+
+        let accs = app
+            .init_accounts(&[Coin::new(1000000000u128, UOSMO)], 2)
+            .unwrap();
+
+        let caller = if caller_is_admin { &admin } else { &accs[0] };
+        let new_admin = if new_admin_is_valid_address {
+            accs[1].address()
+        } else {
+            "invalid_addr".to_string()
+        };
+
+        robot.update_admin(&caller, &new_admin);
+    }
+
+    #[test_case(true ; "caller is new admin")]
+    #[test_case(false => panics ; "caller is not new admin")]
+    fn accept_admin_transfer(caller_is_new_admin: bool) {
+        let app = OsmosisTestApp::new();
+        let pool: OsmosisTestPool = DEFAULT_POOL.into();
+
+        let (robot, admin, _fwa_admin, _treasury) =
+            OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
+        let new_admin = app
+            .init_account(&[Coin::new(1000000000u128, UOSMO)])
+            .unwrap()
+            .with_fee_setting(FeeSetting::Auto {
+                gas_price: Coin::new(100, "uosmo"),
+                gas_adjustment: 1.5,
+            });
+        let user = app
+            .init_account(&[Coin::new(1000000000u128, UOSMO)])
+            .unwrap()
+            .with_fee_setting(FeeSetting::Auto {
+                gas_price: Coin::new(100, "uosmo"),
+                gas_adjustment: 1.5,
+            });
+        let caller = if caller_is_new_admin {
+            &new_admin
+        } else {
+            &user
+        };
+
+        robot
+            .setup(&admin)
+            .update_admin(&admin, new_admin.address())
+            .assert_admin(admin.address())
+            .accept_admin_transfer(caller)
+            .assert_admin(new_admin.address());
+    }
+
+    #[test_case(true ; "caller is admin")]
+    #[test_case(false => panics ; "caller is not admin")]
+    fn drop_admin_transfer(caller_is_admin: bool) {
+        let app = OsmosisTestApp::new();
+        let pool: OsmosisTestPool = DEFAULT_POOL.into();
+
+        let (robot, admin, _fwa_admin, _treasury) =
+            OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
+        let new_admin = app
+            .init_account(&[Coin::new(1000000000u128, UOSMO)])
+            .unwrap()
+            .with_fee_setting(FeeSetting::Auto {
+                gas_price: Coin::new(100, "uosmo"),
+                gas_adjustment: 1.5,
+            });
+        let user = app
+            .init_account(&[Coin::new(1000000000u128, UOSMO)])
+            .unwrap()
+            .with_fee_setting(FeeSetting::Auto {
+                gas_price: Coin::new(100, "uosmo"),
+                gas_adjustment: 1.5,
+            });
+        let caller = if caller_is_admin { &admin } else { &user };
+
+        robot
+            .setup(&admin)
+            .update_admin(&admin, new_admin.address())
+            .assert_admin(admin.address())
+            .drop_admin_transfer(&caller);
+
+        // If admin transfer is dropped, the admin should still be the original admin.
+        // And AcceptAdminTransfer should fail.
+        if caller_is_admin {
+            robot
+                .wasm()
+                .execute(
+                    &robot.vault_addr,
+                    &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Apollo(
+                        ApolloExtensionExecuteMsg::AcceptAdminTransfer {},
+                    )),
+                    &[],
+                    &new_admin,
+                )
+                .unwrap_err();
+
+            robot.assert_admin(admin.address());
+        }
     }
 }
