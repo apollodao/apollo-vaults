@@ -742,7 +742,7 @@ dependencies = [
 [[package]]
 name = "cw-it"
 version = "0.1.0"
-source = "git+https://github.com/apollodao/cw-it.git?rev=23f3a53a8df20d92496a77bd8288e39d06a812b8#23f3a53a8df20d92496a77bd8288e39d06a812b8"
+source = "git+https://github.com/apollodao/cw-it.git?branch=feat/osmosis-v15.0.0-rc3#305bc77dd9b7548cc9daa3c07f0875c57270c9c8"
 dependencies = [
  "anyhow",
  "apollo-utils",
@@ -753,7 +753,6 @@ dependencies = [
  "cosmwasm-std",
  "git2",
  "git2_credentials",
- "osmosis-std 0.14.0",
  "osmosis-test-tube",
  "proptest",
  "prost",
@@ -2149,14 +2148,14 @@ dependencies = [
 
 [[package]]
 name = "osmosis-test-tube"
-version = "14.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?rev=f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1#f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1"
+version = "15.0.0-rc3"
+source = "git+https://github.com/apollodao/test-tube.git?branch=feat/osmosis-v15.0.0-rc3#da94f8abd696dd236b448c7c6d78013bdbf27d56"
 dependencies = [
  "base64",
  "bindgen",
  "cosmrs",
  "cosmwasm-std",
- "osmosis-std 0.14.0",
+ "osmosis-std 0.13.2",
  "prost",
  "serde",
  "serde_json",
@@ -3226,7 +3225,7 @@ dependencies = [
 [[package]]
 name = "test-tube"
 version = "0.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?rev=f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1#f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1"
+source = "git+https://github.com/apollodao/test-tube.git?branch=feat/osmosis-v15.0.0-rc3#da94f8abd696dd236b448c7c6d78013bdbf27d56"
 dependencies = [
  "base64",
  "cosmrs",
