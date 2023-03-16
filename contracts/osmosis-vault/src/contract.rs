@@ -278,8 +278,7 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
                 let event = Event::new("apollo/vault/unlock/reply")
                     .add_attribute("vault_type", "osmosis")
                     .add_attribute("lock_id", res.unlocking_lock_id.to_string());
-                let data = to_binary(&res.unlocking_lock_id)?;
-                Ok(Response::default().add_event(event).set_data(data))
+                Ok(Response::default().add_event(event))
             }
             id => Err(ContractError::UnknownReplyId(id)),
         }
