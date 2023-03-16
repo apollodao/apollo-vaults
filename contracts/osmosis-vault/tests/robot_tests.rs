@@ -381,7 +381,7 @@ fn force_redeem(
         let app = OsmosisTestApp::new();
         let pool: OsmosisTestPool = DEFAULT_POOL.into();
 
-        let (robot, admin, mut fwa_admin, _treasury) =
+        let (robot, _admin, mut fwa_admin, _treasury) =
             OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
 
         if !whitlisted {
