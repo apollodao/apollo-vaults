@@ -103,10 +103,10 @@ where
             ("action", "execute_update_admin"),
             (
                 "previous_admin",
-                self
-                    .admin
+                self.admin
                     .get(deps.as_ref())?
-                    .unwrap_or_else(|| Addr::unchecked("")).as_ref(),
+                    .unwrap_or_else(|| Addr::unchecked(""))
+                    .as_ref(),
             ),
             ("new_admin", &address),
         ]);
@@ -129,10 +129,10 @@ where
             ("action", "execute_accept_admin_transfer"),
             (
                 "previous_admin",
-                self
-                    .admin
+                self.admin
                     .get(deps.as_ref())?
-                    .unwrap_or_else(|| Addr::unchecked("")).as_ref(),
+                    .unwrap_or_else(|| Addr::unchecked(""))
+                    .as_ref(),
             ),
             ("new_admin", new_admin.as_ref()),
         ]);

@@ -666,7 +666,7 @@ mod tests {
         let mut claims = Vec::new();
         for i in start_id..(start_id + n as u64) {
             claims.push(Claim {
-                id: i as u64,
+                id: i,
                 owner: Addr::unchecked(OWNER),
                 base_token_amount: BASE_TOKEN_AMOUNT,
                 release_at: EXPIRATION,

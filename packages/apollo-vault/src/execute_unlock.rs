@@ -3,16 +3,13 @@ use crate::msg::CallbackMsg;
 use crate::AutocompoundingVault;
 use apollo_utils::responses::merge_responses;
 use cosmwasm_std::{
-    attr, Addr, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult, SubMsg, Uint128,
+    attr, Addr, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult, Uint128,
 };
 use cw_dex::traits::{LockedStaking, Pool};
-use cw_storage_plus::Item;
 use cw_vault_standard::extensions::lockup::{
     UnlockingPosition, UNLOCKING_POSITION_ATTR_KEY, UNLOCKING_POSITION_CREATED_EVENT_TYPE,
 };
 use cw_vault_token::VaultToken;
-use osmosis_std::shim::Duration;
-use osmosis_std::types::osmosis::lockup::MsgLockTokens;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
