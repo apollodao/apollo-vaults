@@ -741,7 +741,7 @@ dependencies = [
 [[package]]
 name = "cw-it"
 version = "0.1.0"
-source = "git+https://github.com/apollodao/cw-it.git?branch=feat/osmosis-v15.0.0-rc3#305bc77dd9b7548cc9daa3c07f0875c57270c9c8"
+source = "git+https://github.com/apollodao/cw-it.git?rev=10e6ed7#10e6ed759b33dd9839c7934c6bf9c5611ab2aeb6"
 dependencies = [
  "anyhow",
  "apollo-utils",
@@ -2100,11 +2100,11 @@ dependencies = [
 [[package]]
 name = "osmosis-std"
 version = "0.13.2"
-source = "git+https://github.com/osmosis-labs/osmosis-rust.git?branch=autobuild-v15.0.0-rc3#ab8e145a13cf48371d2b1cd2193c58d282f8ebf1"
+source = "git+https://github.com/osmosis-labs/osmosis-rust.git?branch=autobuild-v15.0.0#7c1d4187d1a9c283b58974e42ef5143b25fbbd0d"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive 0.13.2 (git+https://github.com/osmosis-labs/osmosis-rust.git?branch=autobuild-v15.0.0-rc3)",
+ "osmosis-std-derive 0.13.2 (git+https://github.com/osmosis-labs/osmosis-rust.git?branch=autobuild-v15.0.0)",
  "prost",
  "prost-types",
  "schemars",
@@ -2154,7 +2154,7 @@ dependencies = [
 [[package]]
 name = "osmosis-std-derive"
 version = "0.13.2"
-source = "git+https://github.com/osmosis-labs/osmosis-rust.git?branch=autobuild-v15.0.0-rc3#ab8e145a13cf48371d2b1cd2193c58d282f8ebf1"
+source = "git+https://github.com/osmosis-labs/osmosis-rust.git?branch=autobuild-v15.0.0#7c1d4187d1a9c283b58974e42ef5143b25fbbd0d"
 dependencies = [
  "itertools",
  "proc-macro2",
@@ -2164,14 +2164,14 @@ dependencies = [
 
 [[package]]
 name = "osmosis-test-tube"
-version = "15.0.0-rc3"
-source = "git+https://github.com/apollodao/test-tube.git?branch=feat/osmosis-v15.0.0-rc3#da94f8abd696dd236b448c7c6d78013bdbf27d56"
+version = "14.1.1"
+source = "git+https://github.com/apollodao/test-tube.git?rev=b599c5c#b599c5c1697e5f8ab2d915c3a8ce33c1a4b9d738"
 dependencies = [
  "base64",
  "bindgen",
  "cosmrs",
  "cosmwasm-std",
- "osmosis-std 0.13.2",
+ "osmosis-std 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost",
  "serde",
  "serde_json",
@@ -2216,7 +2216,7 @@ dependencies = [
  "cw-vault-token",
  "cw2",
  "liquidity-helper",
- "osmosis-std 0.13.2 (git+https://github.com/osmosis-labs/osmosis-rust.git?branch=autobuild-v15.0.0-rc3)",
+ "osmosis-std 0.13.2 (git+https://github.com/osmosis-labs/osmosis-rust.git?branch=autobuild-v15.0.0)",
  "osmosis-testing",
  "proptest",
  "semver",
@@ -3241,7 +3241,7 @@ dependencies = [
 [[package]]
 name = "test-tube"
 version = "0.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?branch=feat/osmosis-v15.0.0-rc3#da94f8abd696dd236b448c7c6d78013bdbf27d56"
+source = "git+https://github.com/apollodao/test-tube.git?rev=b599c5c#b599c5c1697e5f8ab2d915c3a8ce33c1a4b9d738"
 dependencies = [
  "base64",
  "cosmrs",
