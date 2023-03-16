@@ -8,9 +8,7 @@ use cw_dex_router::helpers::CwDexRouterUnchecked;
 
 use cw_it::osmosis::robot::OsmosisTestRobot;
 use cw_it::osmosis::OsmosisTestPool;
-use cw_it::osmosis_test_tube::{
-    Account, FeeSetting, Module, OsmosisTestApp, Runner, SigningAccount, Wasm,
-};
+use cw_it::osmosis_test_tube::{Account, Module, OsmosisTestApp, Runner, SigningAccount, Wasm};
 use cw_it::robot::TestRobot;
 
 use cw_utils::Expiration;
@@ -95,22 +93,13 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
                 base_pool.liquidity.clone(),
                 reward_pool.liquidity.clone(),
             ]))
-            .unwrap()
-            .with_fee_setting(FeeSetting::Auto {
-                gas_price: Coin::new(100, "uosmo"),
-                gas_adjustment: 1.5,
-            });
-        println!("admin fee setting: {:?}", admin.fee_setting());
+            .unwrap();
         let fwa_admin = app
             .init_account(&max_of_all_coins(&[
                 base_pool.liquidity.clone(),
                 reward_pool.liquidity.clone(),
             ]))
-            .unwrap()
-            .with_fee_setting(FeeSetting::Auto {
-                gas_price: Coin::new(100, "uosmo"),
-                gas_adjustment: 1.5,
-            });
+            .unwrap();
         let treasury = app.init_account(&[]).unwrap();
         let base_pool_id = base_pool.create(app, &admin);
 
@@ -716,18 +705,10 @@ fn drop_admin_transfer(caller_is_admin: bool) {
             OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
         let new_admin = app
             .init_account(&[Coin::new(1000000000u128, UOSMO)])
-            .unwrap()
-            .with_fee_setting(FeeSetting::Auto {
-                gas_price: Coin::new(100, "uosmo"),
-                gas_adjustment: 1.5,
-            });
+            .unwrap();
         let user = app
             .init_account(&[Coin::new(1000000000u128, UOSMO)])
-            .unwrap()
-            .with_fee_setting(FeeSetting::Auto {
-                gas_price: Coin::new(100, "uosmo"),
-                gas_adjustment: 1.5,
-            });
+            .unwrap();
         let caller = if caller_is_new_admin {
             &new_admin
         } else {
@@ -752,18 +733,10 @@ fn drop_admin_transfer(caller_is_admin: bool) {
             OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
         let new_admin = app
             .init_account(&[Coin::new(1000000000u128, UOSMO)])
-            .unwrap()
-            .with_fee_setting(FeeSetting::Auto {
-                gas_price: Coin::new(100, "uosmo"),
-                gas_adjustment: 1.5,
-            });
+            .unwrap();
         let user = app
             .init_account(&[Coin::new(1000000000u128, UOSMO)])
-            .unwrap()
-            .with_fee_setting(FeeSetting::Auto {
-                gas_price: Coin::new(100, "uosmo"),
-                gas_adjustment: 1.5,
-            });
+            .unwrap();
         let caller = if caller_is_admin { &admin } else { &user };
 
         robot
