@@ -53,3 +53,4 @@ cw-dex-router = { version = "0.1.0", features = ["library","osmosis"] }
 base-vault = { path = "../../packages/base-vault" }
 proptest = "1.0.0"
 cw-utils = "1.0.1"
+apollo-vault-test-helpers = { path = "../../packages/test-helpers", features = ["osmosis"] }

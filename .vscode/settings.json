@@ -4,5 +4,6 @@
     "./contracts/osmosis-vault/Cargo.toml",
     "./packages/apollo-vault/Cargo.toml",
     "./packages/base-vault/Cargo.toml",
+    "./packages/test-helpers/Cargo.toml",
   ]
 }
