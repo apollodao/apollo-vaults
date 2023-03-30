@@ -1,0 +1,23 @@
+[package]
+name = "apollo-vault-test-helpers"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Pacman <pacman@apollo.farm>",
+]
+
+[features]
+default = ["osmosis"]
+osmosis = ["cw-it/osmosis"]
+
+[dependencies]
+apollo-vault = {path = "../apollo-vault", features = ["lockup", "force-unlock"], default-features = false }
+osmosis-vault = { path = "../../contracts/osmosis-vault" }
+cw-vault-standard = { version = "0.2.0", features = ["lockup", "force-unlock"] }
+cosmwasm-std = {version = "1.1", features = ["stargate"]}
+apollo-cw-asset = "0.1.0"
+cw-dex = { version = "0.1.1", features = ["osmosis"] }
+cw-vault-token = "0.1.0"
+cw-it = { git = "https://github.com/apollodao/cw-it", rev = "10e6ed7" }
+liquidity-helper = "0.1.0"
+cw-dex-router = { version = "0.1.0", features = ["library","osmosis"] }
