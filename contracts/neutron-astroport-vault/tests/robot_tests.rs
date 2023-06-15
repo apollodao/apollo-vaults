@@ -18,7 +18,7 @@ use osmosis_vault::msg::ExecuteMsg;
 use base_vault::DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN;
 
 use cw_it::const_coin::ConstCoin;
-use cw_it::osmosis::{ConstOsmosisTestPool, OsmosisPoolType};
+use cw_it::osmosis::{AstroportPoolType, ConstOsmosisTestPool};
 
 use test_case::test_case;
 
@@ -30,7 +30,7 @@ const DEFAULT_POOL: ConstOsmosisTestPool = ConstOsmosisTestPool::new(
         ConstCoin::new(1000000000000, "uosmo"),
         ConstCoin::new(1000000000000, "uatom"),
     ],
-    OsmosisPoolType::Basic,
+    AstroportPoolType::Basic,
 );
 
 const TWO_WEEKS_IN_SECONDS: u32 = 60 * 60 * 24 * 14;

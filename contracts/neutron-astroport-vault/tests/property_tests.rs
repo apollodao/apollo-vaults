@@ -5,7 +5,7 @@ use apollo_vault::msg::{
 use apollo_vault::state::ConfigUnchecked;
 use cosmwasm_std::testing::{MockApi, MockStorage};
 use cosmwasm_std::{Coin, Decimal, Deps, Empty, Querier, QuerierWrapper, StdResult, Uint128};
-use cw_dex::osmosis::{OsmosisPool, OsmosisStaking};
+use cw_dex::osmosis::{AstroportPool, AstroportStaking};
 use cw_dex::traits::Pool as PoolTrait;
 use cw_dex::Pool;
 use cw_dex_router::helpers::CwDexRouterUnchecked;
@@ -60,7 +60,7 @@ impl<'a, Q: Querier> RunnerMockDeps<'a, Q> {
 struct OsmosisVaultRobot<'a, R: Runner<'a>> {
     app: &'a R,
     vault_addr: String,
-    base_pool: OsmosisPool,
+    base_pool: AstroportPool,
 }
 
 impl<'a, R: Runner<'a> + Querier> OsmosisVaultRobot<'a, R> {
@@ -91,7 +91,7 @@ impl<'a, R: Runner<'a> + Querier> OsmosisVaultRobot<'a, R> {
             .data
             .pool_id;
         println!("Pool ID: {}", base_pool_id);
-        let base_pool = OsmosisPool::unchecked(base_pool_id);
+        let base_pool = AstroportPool::unchecked(base_pool_id);
 
         // Create pool for first reward token
         let reward1_pool_id = gamm
@@ -99,7 +99,7 @@ impl<'a, R: Runner<'a> + Querier> OsmosisVaultRobot<'a, R> {
             .unwrap()
             .data
             .pool_id;
-        let reward1_pool = OsmosisPool::unchecked(reward1_pool_id);
+        let reward1_pool = AstroportPool::unchecked(reward1_pool_id);
         let reward1_token = reward1_pool_liquidity
             .iter()
             .find(|x| x.denom != reward_liquidation_target)
@@ -114,7 +114,7 @@ impl<'a, R: Runner<'a> + Querier> OsmosisVaultRobot<'a, R> {
                 .unwrap()
                 .data
                 .pool_id;
-            OsmosisPool::unchecked(rewards2_pool_id)
+            AstroportPool::unchecked(rewards2_pool_id)
         });
         let reward2_token = reward2_pool_liquidity.clone().map(|liquidity| {
             liquidity
@@ -238,7 +238,7 @@ impl<'a, R: Runner<'a> + Querier> OsmosisVaultRobot<'a, R> {
         }
     }
 
-    fn query_state(&self) -> StateResponse<OsmosisStaking, OsmosisPool, OsmosisDenom> {
+    fn query_state(&self) -> StateResponse<AstroportStaking, AstroportPool, OsmosisDenom> {
         let wasm = Wasm::new(self.app);
         wasm.query(
             &self.vault_addr,

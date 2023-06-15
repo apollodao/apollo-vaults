@@ -8,7 +8,7 @@ use apollo_vault::msg::{
 use apollo_vault::state::ConfigUnchecked;
 use base_vault::DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN;
 use cosmwasm_std::{Coin, Decimal, Empty, Uint128};
-use cw_dex::osmosis::{OsmosisPool, OsmosisStaking};
+use cw_dex::osmosis::{AstroportPool, AstroportStaking};
 use cw_dex::traits::Pool as PoolTrait;
 use cw_dex::Pool;
 use cw_dex_router::helpers::CwDexRouterUnchecked;
@@ -75,7 +75,7 @@ where
         .data
         .pool_id;
     println!("Pool ID: {}", pool_id);
-    let base_pool = OsmosisPool::unchecked(pool_id);
+    let base_pool = AstroportPool::unchecked(pool_id);
     let base_token = base_pool.lp_token();
 
     // Create pool for first reward token
@@ -84,7 +84,7 @@ where
         .unwrap()
         .data
         .pool_id;
-    let reward1_pool = OsmosisPool::unchecked(pool_id);
+    let reward1_pool = AstroportPool::unchecked(pool_id);
     let reward1_token = reward1_pool_liquidity
         .iter()
         .find(|x| x.denom != reward_liquidation_target)
@@ -129,7 +129,7 @@ where
             .unwrap()
             .data
             .pool_id;
-        OsmosisPool::unchecked(pool_id)
+        AstroportPool::unchecked(pool_id)
     });
     let reward2_token = reward2_pool_liquidity.clone().map(|liquidity| {
         liquidity
@@ -339,7 +339,7 @@ pub fn test_osmosis_vault_functionality(
     );
 
     // Query vault state
-    let state: StateResponse<OsmosisStaking, OsmosisPool, OsmosisDenom> = wasm
+    let state: StateResponse<AstroportStaking, AstroportPool, OsmosisDenom> = wasm
         .query(
             &vault_addr,
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Apollo(ApolloExtensionQueryMsg::State {})),
@@ -1210,12 +1210,12 @@ const TWO_WEEKS_IN_SECS: u64 = 60 * 60 * 24 * 14;
 fn query_vault_state<'a, R>(
     runner: &'a R,
     vault_addr: &str,
-) -> StateResponse<OsmosisStaking, OsmosisPool, OsmosisDenom>
+) -> StateResponse<AstroportStaking, AstroportPool, OsmosisDenom>
 where
     R: Runner<'a>,
 {
     let wasm = Wasm::new(runner);
-    let state: StateResponse<OsmosisStaking, OsmosisPool, OsmosisDenom> = wasm
+    let state: StateResponse<AstroportStaking, AstroportPool, OsmosisDenom> = wasm
         .query(
             vault_addr,
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Apollo(ApolloExtensionQueryMsg::State {})),
