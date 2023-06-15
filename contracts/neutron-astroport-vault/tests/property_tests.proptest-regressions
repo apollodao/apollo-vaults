@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 1066f25ead5bebe318cd6d19b35b91e66a04bcf2fc78dd73edd6517d9651cc77 # shrinks to deposit_percent = 1, withdraw_percent = 1, base_pool_liquidity_1 = 1000159, base_pool_liquidity_2 = 8515417466109594661, reward_pool1_liquidity_1 = 3090337385369660000, reward_pool1_liquidity_2 = 3236011595535891001, performance_fee_percent = 41
+cc 2d6dd60417296e8a52d6929c7ba8eabdc636987ff6c3f27c20a716fee1de68ce # shrinks to deposit_ppm = 1, withdraw_percent = 1, base_pool_liquidity_1 = 8722278, base_pool_liquidity_2 = 2254430815735551655, reward_pool1_liquidity_1 = 14369744300337697726, reward_pool1_liquidity_2 = 12288647781161477891, reward_pool2_liquidity_1 = 8230974695097478598, reward_pool2_liquidity_2 = 16007436135056214788, performance_fee_ppm = 699231, reward1_amount = 9388323218242939479, reward2_amount = 2575775128669531483
