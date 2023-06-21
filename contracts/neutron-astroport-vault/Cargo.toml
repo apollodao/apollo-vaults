@@ -47,11 +47,11 @@ apollo-utils = "0.1"
 
 [dev-dependencies]
 osmosis-testing = { git = "https://github.com/apollodao/osmosis-rust.git", rev = "430236bd63f26d618e11e59709a56c808c4d427c" }
-cw-it = { git = "https://github.com/apollodao/cw-it.git", branch = "master" }
+cw-it = { git = "https://github.com/apollodao/cw-it.git", rev = "a6c87c0885f31659f302f5a58bbcad3a821775f7", features = ["astroport", "astroport-multi-test", "multi-test", "osmosis-test-tube"] }
 test-case = "3.1"
 liquidity-helper = "0.1.0"
 cw-dex-router = { version = "0.1.0", features = ["library","astroport"] }
 base-vault = { path = "../../packages/base-vault" }
 proptest = "1.2.0"
 cw-utils = "1.0.1"
-apollo-vault-test-helpers = { path = "../../packages/test-helpers" }
+astroport-liquidity-helper = { git = "https://github.com/apollodao/liquidity-helpers.git" }

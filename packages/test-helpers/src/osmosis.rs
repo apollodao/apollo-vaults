@@ -11,7 +11,7 @@ use cw_dex::osmosis::{OsmosisPool, OsmosisStaking};
 use cw_dex_router::helpers::CwDexRouterUnchecked;
 use cw_it::helpers::upload_wasm_file;
 use cw_it::osmosis::robot::OsmosisTestRobot;
-use cw_it::osmosis::OsmosisTestPool;
+use cw_it::osmosis::AstroportTestPool;
 use cw_it::osmosis_test_tube::{Account, Module, OsmosisTestApp, Runner, SigningAccount, Wasm};
 use cw_it::robot::TestRobot;
 use cw_vault_standard::extensions::force_unlock::ForceUnlockExecuteMsg;
@@ -50,9 +50,9 @@ fn max_of_all_coins(coins: &[Vec<Coin>]) -> Vec<Coin> {
 impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
     // TODO: set up router and liquidity helper using robots
     pub fn with_single_rewards(
-        app: &'a OsmosisTestApp,
-        base_pool: OsmosisTestPool,
-        reward_pool: OsmosisTestPool,
+        app: &'a TestRunner<'a>,
+        base_pool: AstroportTestPool,
+        reward_pool: AstroportTestPool,
         wasm_file_path: &str,
     ) -> (Self, SigningAccount, SigningAccount, SigningAccount) {
         let admin = app
