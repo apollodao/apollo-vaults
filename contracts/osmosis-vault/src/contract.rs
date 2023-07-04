@@ -155,7 +155,11 @@ pub fn execute(
                     CallbackMsg::MintVaultToken { amount, recipient } => {
                         contract.execute_callback_mint_vault_token(deps, env, amount, recipient)
                     }
-                    CallbackMsg::Redeem { recipient, amount } => todo!(),
+                    CallbackMsg::Unlock {
+                        owner,
+                        vault_token_amount,
+                    } => todo!(),
+                    CallbackMsg::SaveClaim {} => todo!(),
                 }
             }
         },

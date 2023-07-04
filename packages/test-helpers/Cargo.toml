@@ -9,6 +9,8 @@ authors = [
 [features]
 default = ["osmosis"]
 osmosis = ["cw-it/osmosis"]
+astroport = ["cw-it/astroport"]
+neutron-astroport-vault = ["astroport", "dep:neutron-astroport-vault"]
 
 [dependencies]
 apollo-vault = {path = "../apollo-vault", features = ["lockup", "force-unlock"], default-features = false }
@@ -18,6 +20,9 @@ cosmwasm-std = {version = "1.1", features = ["stargate"]}
 apollo-cw-asset = "0.1.0"
 cw-dex = { version = "0.1.1", features = ["osmosis"] }
 cw-vault-token = "0.1.0"
-cw-it = { git = "https://github.com/apollodao/cw-it", rev = "3f30e547f757e9e4f882e01b9af5bdd373a13198" }
+cw-it = { git = "https://github.com/apollodao/cw-it", rev = "a6c87c0885f31659f302f5a58bbcad3a821775f7", features = ["multi-test"] }
 liquidity-helper = "0.1.0"
 cw-dex-router = { version = "0.1.0", features = ["library","osmosis"] }
+neutron-astroport-vault = { path = "../../contracts/neutron-astroport-vault", optional = true }
+astroport-liquidity-helper = { git = "https://github.com/apollodao/liquidity-helpers.git" }
+cw-utils = "1.0"

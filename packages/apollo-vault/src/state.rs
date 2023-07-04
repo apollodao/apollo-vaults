@@ -356,6 +356,11 @@ impl<'a> Claims<'a> {
 
     // ========== Query functions ==========
 
+    /// Query next claim id
+    pub fn query_next_claim_id(&self, deps: Deps) -> StdResult<u64> {
+        self.next_claim_id.load(deps.storage)
+    }
+
     /// Query lockup by id
     pub fn query_claim_by_id(&self, deps: Deps, lockup_id: u64) -> StdResult<UnlockingPosition> {
         self.claims.load(deps.storage, lockup_id)
