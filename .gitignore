@@ -1,0 +1,46 @@
+# Build results
+**/target
+
+# Cargo + Git helper file
+# https://github.com/rust-lang/cargo/blob/0.44.1/src/cargo/sources/git/utils.rs#L320-L327
+.cargo-ok
+
+# Text file backups
+**/*.rs.bk
+
+# macOS
+.DS_Store
+
+# IDEs
+*.iml
+.idea
+
+# Environment
+*.env
+
+# Scripts
+node_modules/
+
+# Temporary files
+**/tmp.*
+
+# Private TypeScript files are preceeded by an underscore
+**/_*.ts
+
+# Instantiate message files
+scripts/msgs/*.json
+
+# contract schemas
+contracts/*/schema
+
+artifacts/
+/contracts/**/artifacts
+/contracts/**/target
+/contracts/**/debug
+/contracts/**/schema
+/contracts/**/.rustc_info.json
+/packages/**/artifacts
+/packages/**/target
+/packages/**/debug
+/packages/**/schema
+/packages/**/.rustc_info.json

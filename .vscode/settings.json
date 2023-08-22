@@ -1,0 +1,8 @@
+{
+  "rust-analyzer.linkedProjects": [
+    "./contracts/astroport-vault/Cargo.toml",
+    "./contracts/osmosis-vault/Cargo.toml",
+    "./packages/apollo-vault/Cargo.toml",
+    "./packages/base-vault/Cargo.toml",
+  ]
+}

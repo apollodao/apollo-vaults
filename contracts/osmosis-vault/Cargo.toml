@@ -1,0 +1,54 @@
+[package]
+authors = ["Sturdy <sturdy@apollo.farm>"]
+edition = "2021"
+name = "osmosis-vault"
+version = "0.1.4"
+
+[workspace]
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[package.metadata.scripts]
+optimize = """docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/rust-optimizer:0.12.8
+"""
+
+[dependencies]
+apollo-vault = {path = "../../packages/apollo-vault", features = ["lockup", "force-unlock"], default-features = false }
+osmosis-std = "0.14.0"
+cw-vault-standard = { version = "0.2.0", features = ["lockup", "force-unlock"] }
+cosmwasm-schema = "1.1"
+cosmwasm-std = {version = "1.1", features = ["stargate"]}
+apollo-cw-asset = "0.1.0"
+cw-dex = { version = "0.1.1", features = ["osmosis"] }
+cw-vault-token = "0.1.0"
+cw2 = "1.0.1"
+semver = "1"
+serde = {version = "1.0.152", default-features = false, features = ["derive"]}
+apollo-utils = "0.1.0"
+
+[dev-dependencies]
+osmosis-testing = { git = "https://github.com/apollodao/osmosis-rust.git", rev = "430236bd63f26d618e11e59709a56c808c4d427c" }
+cw-it = { git = "https://github.com/apollodao/cw-it", rev = "5d36b50cd04cdfe75ede3eb6508a743340cf5ae5" }
+test-case = "2.2.2"
+liquidity-helper = "0.1.0"
+cw-dex-router = { version = "0.1.0", features = ["library","osmosis"] }
+base-vault = { path = "../../packages/base-vault" }
+proptest = "1.0.0"

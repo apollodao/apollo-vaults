@@ -1,0 +1,45 @@
+[package]
+name = "astroport-vault"
+version = "0.1.2"
+authors = ["Apollo Dev"]
+edition = "2021"
+
+[workspace]
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+
+[package.metadata.scripts]
+optimize = """docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/rust-optimizer:0.12.6
+"""
+
+[dependencies]
+cosmwasm-schema = "1.1"
+cosmwasm-std = "1.1"
+cw2 = "1.0.1"
+apollo-vault = {path = "../../packages/apollo-vault"}
+cw-vault-standard = { version = "0.2.0", features = ["cw4626"]}
+cw-dex = { version = "0.1.1", features = ["astroport"]}
+astroport-types = "0.1.0"
+cw-vault-token = "0.1.0"
+apollo-cw-asset = "0.1.0"
+cw20-base = { version = "1.0.1", features = ["library"] }
+semver = "1"

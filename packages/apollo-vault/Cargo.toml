@@ -1,0 +1,37 @@
+[package]
+authors = ["Sturdy <sturdy@apollo.farm>"]
+edition = "2021"
+name = "apollo-vault"
+version = "0.1.2"
+
+[features]
+default = ["redeem"]
+redeem = []
+lockup = []
+force-unlock = []
+
+[dependencies]
+cosmwasm-schema = "1.1"
+cosmwasm-std = {version = "1.2.1", features = ["stargate"]}
+cw-storage-plus = "1.0.1"
+cw20 = "1.0.1"
+schemars = "0.8.11"
+semver = "1"
+serde = {version = "1.0.152", default-features = false, features = ["derive"]}
+apollo-cw-asset = "0.1.0"
+cw-controllers = "1.0.1"
+cw-dex = "0.1.1"
+cw-dex-router = { version = "0.1.0", features = ["library"] }
+cw-vault-token = "0.1.0"
+cw-vault-standard = { version = "0.2.0", features = ["lockup", "force-unlock"]}
+derive_builder = "0.11.2"
+thiserror = {version = "1.0.31"}
+cw20-base = { version = "1.0.1", features = ["library"] }
+apollo-utils = "0.1.0"
+base-vault = { path = "../base-vault" }
+cw-utils = "1.0.1"
+liquidity-helper = "0.1.0"
+osmosis-std = "0.14.0"
+
+[dev-dependencies]
+test-case = "2.2.2"
