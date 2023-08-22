@@ -41,11 +41,8 @@ cw-dex = { version = "0.1.1", features = ["osmosis"] }
 cw-vault-token = "0.1.0"
 cw2 = "1.0.1"
 semver = "1"
-serde = {version = "1.0.152", default-features = false, features = ["derive"]}
-apollo-utils = "0.1.0"
 
 [dev-dependencies]
-osmosis-testing = { git = "https://github.com/apollodao/osmosis-rust.git", rev = "430236bd63f26d618e11e59709a56c808c4d427c" }
 cw-it = { git = "https://github.com/apollodao/cw-it.git", rev = "10e6ed7", features = ["osmosis"] }
 test-case = "2.2.2"
 liquidity-helper = "0.1.0"
