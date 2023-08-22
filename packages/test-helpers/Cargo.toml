@@ -18,6 +18,6 @@ cosmwasm-std = {version = "1.1", features = ["stargate"]}
 apollo-cw-asset = "0.1.0"
 cw-dex = { version = "0.1.1", features = ["osmosis"] }
 cw-vault-token = "0.1.0"
-cw-it = { git = "https://github.com/apollodao/cw-it", rev = "23f3a53a8df20d92496a77bd8288e39d06a812b8" }
+cw-it = { git = "https://github.com/apollodao/cw-it.git", rev = "10e6ed7", features = ["osmosis"] }
 liquidity-helper = "0.1.0"
 cw-dex-router = { version = "0.1.0", features = ["library","osmosis"] }
