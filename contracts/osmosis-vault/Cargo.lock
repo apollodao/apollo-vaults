@@ -98,7 +98,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-dex",
  "cw-dex-router",
- "cw-it 0.1.0 (git+https://github.com/apollodao/cw-it?rev=23f3a53a8df20d92496a77bd8288e39d06a812b8)",
+ "cw-it",
  "cw-vault-standard",
  "cw-vault-token",
  "liquidity-helper",
@@ -752,33 +752,7 @@ dependencies = [
  "cosmwasm-std",
  "git2",
  "git2_credentials",
- "osmosis-test-tube 14.1.1 (git+https://github.com/apollodao/test-tube.git?rev=b599c5c)",
- "proptest",
- "prost",
- "serde",
- "serde_json",
- "testcontainers",
- "thiserror",
- "tokio",
- "tonic",
-]
-
-[[package]]
-name = "cw-it"
-version = "0.1.0"
-source = "git+https://github.com/apollodao/cw-it?rev=23f3a53a8df20d92496a77bd8288e39d06a812b8#23f3a53a8df20d92496a77bd8288e39d06a812b8"
-dependencies = [
- "anyhow",
- "apollo-utils",
- "config",
- "cosmos-sdk-proto 0.15.0",
- "cosmrs",
- "cosmwasm-schema",
- "cosmwasm-std",
- "git2",
- "git2_credentials",
- "osmosis-std 0.14.0",
- "osmosis-test-tube 14.1.1 (git+https://github.com/apollodao/test-tube.git?rev=f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1)",
+ "osmosis-test-tube",
  "proptest",
  "prost",
  "serde",
@@ -2194,24 +2168,7 @@ dependencies = [
  "prost",
  "serde",
  "serde_json",
- "test-tube 0.1.1 (git+https://github.com/apollodao/test-tube.git?rev=b599c5c)",
- "thiserror",
-]
-
-[[package]]
-name = "osmosis-test-tube"
-version = "14.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?rev=f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1#f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1"
-dependencies = [
- "base64",
- "bindgen",
- "cosmrs",
- "cosmwasm-std",
- "osmosis-std 0.14.0",
- "prost",
- "serde",
- "serde_json",
- "test-tube 0.1.1 (git+https://github.com/apollodao/test-tube.git?rev=f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1)",
+ "test-tube",
  "thiserror",
 ]
 
@@ -2246,7 +2203,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-dex",
  "cw-dex-router",
- "cw-it 0.1.0 (git+https://github.com/apollodao/cw-it.git?rev=10e6ed7)",
+ "cw-it",
  "cw-utils",
  "cw-vault-standard",
  "cw-vault-token",
@@ -3283,21 +3240,6 @@ dependencies = [
  "cosmrs",
  "cosmwasm-std",
  "osmosis-std 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "prost",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "test-tube"
-version = "0.1.1"
-source = "git+https://github.com/apollodao/test-tube.git?rev=f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1#f39b76a6cbbb2aa5a728fa32b145f8c254d38ff1"
-dependencies = [
- "base64",
- "cosmrs",
- "cosmwasm-std",
- "osmosis-std 0.14.0",
  "prost",
  "serde",
  "serde_json",
