@@ -7,8 +7,8 @@ authors = [
 ]
 
 [features]
-default = ["osmosis"]
-osmosis = ["cw-it/osmosis"]
+default = ["osmosis-test-tube"]
+osmosis-test-tube = ["cw-it/osmosis-test-tube"]
 
 [dependencies]
 apollo-vault = {path = "../apollo-vault", features = ["lockup", "force-unlock"], default-features = false }
@@ -18,6 +18,6 @@ cosmwasm-std = {version = "1.1", features = ["stargate"]}
 apollo-cw-asset = "0.1.0"
 cw-dex = { version = "0.1.1", features = ["osmosis"] }
 cw-vault-token = "0.1.0"
-cw-it = { git = "https://github.com/apollodao/cw-it.git", rev = "10e6ed7", features = ["osmosis"] }
+cw-it = { version = "0.2.0-rc.2", features = ["osmosis", "multi-test"] }
 liquidity-helper = "0.1.0"
 cw-dex-router = { version = "0.1.0", features = ["library","osmosis"] }
