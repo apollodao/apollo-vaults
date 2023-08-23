@@ -18,10 +18,12 @@ exclude = [
 crate-type = ["cdylib", "rlib"]
 
 [features]
+default = ["osmosis-test-tube"]
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
+osmosis-test-tube = ["cw-it/osmosis-test-tube", "apollo-vault-test-helpers/osmosis-test-tube"]
 
 [package.metadata.scripts]
 optimize = """docker run --rm -v "$(pwd)":/code \
@@ -43,11 +45,11 @@ cw2 = "1.0.1"
 semver = "1"
 
 [dev-dependencies]
-cw-it = { git = "https://github.com/apollodao/cw-it.git", rev = "10e6ed7", features = ["osmosis"] }
+cw-it = { version = "0.2.0-rc.2", features = ["osmosis"] }
 test-case = "2.2.2"
 liquidity-helper = "0.1.0"
 cw-dex-router = { version = "0.1.0", features = ["library","osmosis"] }
 base-vault = { path = "../../packages/base-vault" }
 proptest = "1.0.0"
 cw-utils = "1.0.1"
-apollo-vault-test-helpers = { path = "../../packages/test-helpers", features = ["osmosis"] }
+apollo-vault-test-helpers = { path = "../../packages/test-helpers" }
