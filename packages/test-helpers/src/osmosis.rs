@@ -6,20 +6,31 @@ use apollo_vault::msg::{
     StateResponse,
 };
 use apollo_vault::state::{ConfigUnchecked, ConfigUpdates};
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Empty, Uint128};
 use cw_dex::osmosis::{OsmosisPool, OsmosisStaking};
-use cw_dex_router::helpers::CwDexRouterUnchecked;
 use cw_it::helpers::upload_wasm_file;
-use cw_it::osmosis::robot::OsmosisTestRobot;
+use cw_it::osmosis::robot::{OsmosisTestAppRobot, OsmosisTestRobot};
 use cw_it::osmosis::OsmosisTestPool;
 use cw_it::osmosis_test_tube::{Account, Module, OsmosisTestApp, Runner, SigningAccount, Wasm};
 use cw_it::robot::TestRobot;
+use cw_it::traits::CwItRunner;
+use cw_it::{Artifact, ContractType, TestRunner};
 use cw_vault_standard::extensions::force_unlock::ForceUnlockExecuteMsg;
 use cw_vault_standard::extensions::lockup::{LockupExecuteMsg, LockupQueryMsg, UnlockingPosition};
 use cw_vault_standard::VaultInfoResponse;
 use cw_vault_token::osmosis::OsmosisDenom;
-use liquidity_helper::LiquidityHelperUnchecked;
+use liquidity_helper::LiquidityHelper;
 use osmosis_vault::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+
+use crate::router::CwDexRouterRobot;
+
+pub const LIQUIDITY_HELPER_WASM_NAME: &str = "osmosis_liquidity_helper.wasm";
+
+/// Contracts that are required for the Vault contract to function.
+pub struct OsmosisVaultDependencies<'a> {
+    pub cw_dex_router_robot: CwDexRouterRobot<'a>,
+    pub liquidity_helper: LiquidityHelper,
+}
 
 #[derive(Debug, Clone)]
 pub struct OsmosisVaultRobot<'a, R: Runner<'a>> {
@@ -29,10 +40,12 @@ pub struct OsmosisVaultRobot<'a, R: Runner<'a>> {
 }
 
 impl<'a, R: Runner<'a>> TestRobot<'a, R> for OsmosisVaultRobot<'a, R> {
-    fn app(&self) -> &'a R {
+    fn runner(&self) -> &'a R {
         self.app
     }
 }
+
+impl<'a> OsmosisTestAppRobot<'a> for OsmosisVaultRobot<'a, OsmosisTestApp> {}
 
 impl<'a> OsmosisTestRobot<'a> for OsmosisVaultRobot<'a, OsmosisTestApp> {}
 
@@ -48,19 +61,92 @@ fn max_of_all_coins(coins: &[Vec<Coin>]) -> Vec<Coin> {
 }
 
 impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
-    // TODO: set up router and liquidity helper using robots
-    pub fn with_single_rewards(
-        app: &'a OsmosisTestApp,
+    pub fn setup(&self, _admin: &SigningAccount) -> &Self {
+        self.whitelist_address_for_force_unlock(&self.vault_addr)
+    }
+}
+
+impl<'a> OsmosisVaultRobot<'a, TestRunner<'a>> {
+    // Uploads and instantiates dependencies for the LockedAstroportVaultRobot.
+    pub fn instantiate_deps(
+        runner: &'a TestRunner<'a>,
+        signer: &SigningAccount,
+        artifacts_dir: &str,
+    ) -> OsmosisVaultDependencies<'a> {
+        // Create CwDexRouterRobot
+        let cw_dex_router_robot = CwDexRouterRobot::new(
+            runner,
+            CwDexRouterRobot::contract(runner, artifacts_dir),
+            signer,
+        );
+
+        // Upload and instantiate liquidity helper
+        let liquidity_helper_contract = match runner {
+            #[cfg(feature = "osmosis-test-tube")]
+            TestRunner::OsmosisTestApp(_) => ContractType::Artifact(Artifact::Local(format!(
+                "{}/{}",
+                artifacts_dir, LIQUIDITY_HELPER_WASM_NAME
+            ))),
+            // TestRunner::MultiTest(_) => {
+            //     ContractType::MultiTestContract(Box::new(ContractWrapper::new_with_empty(
+            //         osmosis_liquidity_helper::contract::execute,
+            //         osmosis_liquidity_helper::contract::instantiate,
+            //         osmosis_liquidity_helper::contract::query,
+            //     )))
+            // }
+            _ => panic!("Unsupported runner"),
+        };
+        let wasm = Wasm::new(runner);
+        let code_id = runner
+            .store_code(liquidity_helper_contract, signer)
+            .unwrap();
+        let liquidity_helper_addr = wasm
+            .instantiate(
+                code_id,
+                &Empty {},
+                Some(&signer.address()),
+                Some("astroport_liquidity_helper"),
+                &[],
+                signer,
+            )
+            .unwrap()
+            .data
+            .address;
+
+        OsmosisVaultDependencies {
+            cw_dex_router_robot,
+            liquidity_helper: LiquidityHelper::new(Addr::unchecked(liquidity_helper_addr)),
+        }
+    }
+}
+
+impl<'a, R> OsmosisVaultRobot<'a, R>
+where
+    R: CwItRunner<'a>,
+{
+    pub fn new_admin(
+        app: &R,
         base_pool: OsmosisTestPool,
         reward_pool: OsmosisTestPool,
-        wasm_file_path: &str,
-    ) -> (Self, SigningAccount, SigningAccount, SigningAccount) {
+    ) -> SigningAccount {
         let admin = app
             .init_account(&max_of_all_coins(&[
                 base_pool.liquidity.clone(),
                 reward_pool.liquidity.clone(),
             ]))
             .unwrap();
+        admin
+    }
+
+    // TODO: set up router and liquidity helper using robots
+    pub fn with_single_rewards(
+        app: &'a R,
+        base_pool: OsmosisTestPool,
+        reward_pool: OsmosisTestPool,
+        dependencies: &'a OsmosisVaultDependencies<'a>,
+        wasm_file_path: &str,
+        admin: &SigningAccount,
+    ) -> (Self, SigningAccount, SigningAccount) {
         let fwa_admin = app
             .init_account(&max_of_all_coins(&[
                 base_pool.liquidity.clone(),
@@ -70,13 +156,18 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
         let treasury = app.init_account(&[]).unwrap();
         let base_pool_id = base_pool.create(app, &admin);
 
-        let code_id = upload_wasm_file(app, &admin, wasm_file_path).unwrap();
+        let contract = ContractType::Artifact(cw_it::Artifact::Local(wasm_file_path.to_string()));
+
+        let code_id = upload_wasm_file(app, &admin, contract).unwrap();
 
         let config = ConfigUnchecked {
             performance_fee: Decimal::percent(3), //TODO: variable performance fee
             treasury: treasury.address(),
-            // TODO: Setup router
-            router: CwDexRouterUnchecked::new(app.init_account(&[]).unwrap().address()),
+            router: dependencies
+                .cw_dex_router_robot
+                .cw_dex_router
+                .clone()
+                .into(),
             reward_assets: vec![AssetInfoUnchecked::native(
                 reward_pool.liquidity[0].denom.clone(),
             )],
@@ -84,10 +175,7 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
                 base_pool.liquidity[0].denom.clone(),
             ),
             force_withdraw_whitelist: vec![fwa_admin.address()],
-            // TODO: Setup liquidity helper
-            liquidity_helper: LiquidityHelperUnchecked::new(
-                app.init_account(&[]).unwrap().address(),
-            ),
+            liquidity_helper: dependencies.liquidity_helper.clone().into(),
         };
 
         let init_msg = InstantiateMsg {
@@ -105,7 +193,7 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
                 &init_msg,
                 Some(&admin.address()),
                 Some("Apollo Vault"),
-                &[Coin::new(10_000_000u128, "uosmo")],
+                &[],
                 &admin,
             )
             .unwrap()
@@ -118,22 +206,9 @@ impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
                 vault_addr,
                 base_pool: OsmosisPool::unchecked(base_pool_id),
             },
-            admin,
             fwa_admin,
             treasury,
         )
-    }
-
-    pub fn setup(&self, admin: &SigningAccount) -> &Self {
-        self.send_native_tokens(
-            // LP tokens to vault to allow it to create new Locks on unlock
-            // TODO: Remove this after mainnet chain upgrade
-            &admin,
-            &self.vault_addr,
-            1000000u32,
-            self.query_info().base_token,
-        )
-        .whitelist_address_for_force_unlock(&self.vault_addr)
     }
 
     pub fn query_vault_state(&self) -> StateResponse<OsmosisStaking, OsmosisPool, OsmosisDenom> {

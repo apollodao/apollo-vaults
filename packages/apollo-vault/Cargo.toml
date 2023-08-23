@@ -22,7 +22,7 @@ apollo-cw-asset = "0.1.0"
 cw-controllers = "1.0.1"
 cw-dex = "0.1.1"
 cw-dex-router = { version = "0.1.0", features = ["library"] }
-cw-vault-token = "0.1.0"
+cw-vault-token = "0.2.0-rc.1"
 cw-vault-standard = { version = "0.2.0", features = ["lockup", "force-unlock"]}
 derive_builder = "0.11.2"
 thiserror = {version = "1.0.31"}
@@ -31,7 +31,6 @@ apollo-utils = "0.1.0"
 base-vault = { path = "../base-vault" }
 cw-utils = "1.0.1"
 liquidity-helper = "0.1.0"
-osmosis-std = "0.14.0"
 
 [dev-dependencies]
 test-case = "2.2.2"

@@ -6,10 +6,11 @@ use cosmwasm_std::{Coin, Decimal, Timestamp, Uint128};
 
 use cw_dex_router::helpers::CwDexRouterUnchecked;
 
-use cw_it::osmosis::robot::OsmosisTestRobot;
+use cw_it::osmosis::robot::{OsmosisTestAppRobot, OsmosisTestRobot};
 use cw_it::osmosis::OsmosisTestPool;
 use cw_it::osmosis_test_tube::{Account, OsmosisTestApp};
 use cw_it::robot::TestRobot;
+use cw_it::TestRunner;
 
 use cw_utils::Expiration;
 use liquidity_helper::LiquidityHelperUnchecked;
@@ -22,6 +23,7 @@ use cw_it::osmosis::{ConstOsmosisTestPool, OsmosisPoolType};
 
 use test_case::test_case;
 
+const DEPENDENCY_ARTIFACTS_DIR: &str = "tests/artifacts";
 const WASM_FILE_PATH: &str = "target/wasm32-unknown-unknown/release/osmosis_vault.wasm";
 const UOSMO: &str = "uosmo";
 
@@ -63,10 +65,19 @@ fn force_withdraw_unlocking(
     multiple_unlocking_positions: bool,
 ) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
-
-    let (robot, admin, mut fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, mut fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
     // Parse args into message params
     if !whitlisted {
@@ -153,10 +164,19 @@ fn force_redeem(
     funds_type: Funds,
 ) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
-
-    let (robot, admin, mut fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, mut fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
     if !whitlisted {
         fwa_admin = app
@@ -229,10 +249,20 @@ fn force_redeem(
 #[test_case(false, Funds::TooManyCoins => panics ; "too many coins in funds")]
 fn deposit(different_recipient: bool, funds: Funds) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, _fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     robot.setup(&admin);
 
     let recipient = if different_recipient {
@@ -263,6 +293,44 @@ fn deposit(different_recipient: bool, funds: Funds) {
         );
 }
 
+#[test]
+/// Tests that the first deposit works when there are already some reward assets to be compounded
+/// in the vault before the first deposit. This was a previous bug that has been fixed.
+fn first_deposit_works_when_reward_assets_are_already_in_vault() {
+    let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
+    let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
+    robot.setup(&admin);
+
+    // Donate some uosmo to the vault
+    let donation_amount = 1000000u128;
+    robot.send_native_tokens(&admin, &robot.vault_addr, donation_amount, "uosmo");
+
+    let vault_token_denom = robot.query_info().vault_token;
+    let base_token_denom = robot.query_info().base_token;
+    let deposit_amount = Uint128::new(1_000_000_000_000_000u128);
+    let funds = vec![Coin::new(deposit_amount.u128(), &base_token_denom)];
+
+    robot
+        .deposit(&admin, deposit_amount, None, &funds)
+        .assert_native_token_balance_gt(
+            admin.address(),
+            &vault_token_denom,
+            deposit_amount * DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN,
+        );
+}
+
 #[test_case(Uint128::new(1_000_000_000_000_000u128), Funds::Correct ; "correct funds")]
 #[test_case(Uint128::zero(), Funds::Correct => panics ; "zero amount correct funds")]
 #[test_case(Uint128::zero(), Funds::Excess => panics ; "zero amount excess funds")]
@@ -271,10 +339,20 @@ fn deposit(different_recipient: bool, funds: Funds) {
 #[test_case(Uint128::new(1_000_000_000_000_000u128), Funds::TooManyCoins => panics ; "too many coins in funds")]
 fn unlock(unlock_amount: Uint128, funds_type: Funds) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, _fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     robot.setup(&admin);
 
     let vault_token_denom = robot.query_info().vault_token;
@@ -331,10 +409,20 @@ fn unlock(unlock_amount: Uint128, funds_type: Funds) {
 #[test_case(true, true, true ; "owner withdraws to different recipient lock expired")]
 fn withdraw_unlocked(is_owner: bool, different_recipient: bool, expired: bool) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     robot.setup(&admin);
 
     let base_token_denom = robot.query_info().base_token;
@@ -368,10 +456,20 @@ fn withdraw_unlocked(is_owner: bool, different_recipient: bool, expired: bool) {
 #[test_case(true ; "caller is admin")]
 fn update_force_withdraw_whitelist(is_admin: bool) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, _fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     robot.setup(&admin);
     let user = app
         .init_account(&[Coin::new(1000000000u128, UOSMO)])
@@ -397,10 +495,20 @@ fn update_force_withdraw_whitelist(is_admin: bool) {
      ; "recipient is None")]
 fn redeem(recipient: Option<String>) -> String {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     robot.setup(&admin);
 
     let recipient = recipient.map(|_| fwa_admin.address());
@@ -424,10 +532,20 @@ fn redeem(recipient: Option<String>) -> String {
 #[test_case(true ; "caller is admin")]
 fn update_config(is_admin: bool) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, _fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     robot.setup(&admin);
 
     let accs = app
@@ -463,10 +581,20 @@ fn update_config(is_admin: bool) {
 #[test_case(false, false => panics ; "caller is not admin and new admin is invalid address")]
 fn update_admin(caller_is_admin: bool, new_admin_is_valid_address: bool) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, _fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     robot.setup(&admin);
 
     let accs = app
@@ -487,10 +615,20 @@ fn update_admin(caller_is_admin: bool, new_admin_is_valid_address: bool) {
 #[test_case(false => panics ; "caller is not new admin")]
 fn accept_admin_transfer(caller_is_new_admin: bool) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, _fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     let new_admin = app
         .init_account(&[Coin::new(1000000000u128, UOSMO)])
         .unwrap();
@@ -515,10 +653,20 @@ fn accept_admin_transfer(caller_is_new_admin: bool) {
 #[test_case(false => panics ; "caller is not admin")]
 fn drop_admin_transfer(caller_is_admin: bool) {
     let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
     let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
 
-    let (robot, admin, _fwa_admin, _treasury) =
-        OsmosisVaultRobot::with_single_rewards(&app, pool.clone(), pool, WASM_FILE_PATH);
     let new_admin = app
         .init_account(&[Coin::new(1000000000u128, UOSMO)])
         .unwrap();
