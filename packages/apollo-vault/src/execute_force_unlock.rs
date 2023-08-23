@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use apollo_utils::responses::merge_responses;
-use cosmwasm_std::{attr, Addr, DepsMut, Env, Event, MessageInfo, Response, Uint128};
+use cosmwasm_std::{attr, Addr, Coin, DepsMut, Env, Event, MessageInfo, Response, Uint128};
 use cw_dex::traits::{ForceUnlock, Pool};
 use cw_vault_token::VaultToken;
 use serde::de::DeserializeOwned;
@@ -28,6 +28,21 @@ where
     ) -> Result<Response, ContractError> {
         let cfg = self.config.load(deps.storage)?;
         let vault_token = self.base_vault.vault_token.load(deps.storage)?;
+        let vault_token_denom = vault_token.to_string();
+
+        // Check that exactly the right funds were sent
+        if info.funds.len() != 1
+            || info.funds[0].denom != vault_token_denom
+            || info.funds[0].amount != vault_token_amount
+        {
+            return Err(ContractError::UnexpectedFunds {
+                expected: vec![Coin {
+                    denom: vault_token.to_string(),
+                    amount: vault_token_amount,
+                }],
+                actual: info.funds.clone(),
+            });
+        }
 
         // Receive the vault token to the contract's balance, or validate that it was
         // already received
