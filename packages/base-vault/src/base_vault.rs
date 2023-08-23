@@ -87,6 +87,18 @@ where
     ) -> Result<Uint128, StdError> {
         let vault_tokens = if total_staked_amount.is_zero() {
             base_tokens.checked_mul(DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN)?
+        }
+        // vault_token_supply can be zero when total_staked_amount is not zero, if there were rewards
+        // in the vault before the first deposit, since then these would be compounded and
+        // total_staked_amount would be increased before the vault tokens for the first deposit
+        // are minted. In this case we add `total_staked_amount` (which is LP tokens received during
+        // the first compounding) with `base_tokens` (which is the LP tokens deposited) and multiply
+        // this with `DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN`. This is instead of just multiplying
+        // with `base_tokens` which would allow manipulating the vault token price before the first
+        // deposit.
+        else if vault_token_supply.is_zero() {
+            (total_staked_amount.checked_add(base_tokens)?)
+                .checked_mul(DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN)?
         } else {
             vault_token_supply.multiply_ratio(base_tokens, total_staked_amount)
         };

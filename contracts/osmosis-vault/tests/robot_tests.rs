@@ -293,6 +293,44 @@ fn deposit(different_recipient: bool, funds: Funds) {
         );
 }
 
+#[test]
+/// Tests that the first deposit works when there are already some reward assets to be compounded
+/// in the vault before the first deposit. This was a previous bug that has been fixed.
+fn first_deposit_works_when_reward_assets_are_already_in_vault() {
+    let app = OsmosisTestApp::new();
+    let runner = TestRunner::OsmosisTestApp(&app);
+    let pool: OsmosisTestPool = DEFAULT_POOL.into();
+    let admin = OsmosisVaultRobot::new_admin(&app, pool.clone(), pool.clone());
+    let dependencies =
+        OsmosisVaultRobot::instantiate_deps(&runner, &admin, DEPENDENCY_ARTIFACTS_DIR);
+    let (robot, _fwa_admin, _treasury) = OsmosisVaultRobot::with_single_rewards(
+        &app,
+        pool.clone(),
+        pool,
+        &dependencies,
+        WASM_FILE_PATH,
+        &admin,
+    );
+    robot.setup(&admin);
+
+    // Donate some uosmo to the vault
+    let donation_amount = 1000000u128;
+    robot.send_native_tokens(&admin, &robot.vault_addr, donation_amount, "uosmo");
+
+    let vault_token_denom = robot.query_info().vault_token;
+    let base_token_denom = robot.query_info().base_token;
+    let deposit_amount = Uint128::new(1_000_000_000_000_000u128);
+    let funds = vec![Coin::new(deposit_amount.u128(), &base_token_denom)];
+
+    robot
+        .deposit(&admin, deposit_amount, None, &funds)
+        .assert_native_token_balance_gt(
+            admin.address(),
+            &vault_token_denom,
+            deposit_amount * DEFAULT_VAULT_TOKENS_PER_STAKED_BASE_TOKEN,
+        );
+}
+
 #[test_case(Uint128::new(1_000_000_000_000_000u128), Funds::Correct ; "correct funds")]
 #[test_case(Uint128::zero(), Funds::Correct => panics ; "zero amount correct funds")]
 #[test_case(Uint128::zero(), Funds::Excess => panics ; "zero amount excess funds")]
