@@ -9,7 +9,7 @@ use apollo_vault::AutocompoundingVault;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsgResponse, SubMsgResult, Uint128,
+    StdResult, SubMsgResponse, SubMsgResult,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_dex::osmosis::{
@@ -40,7 +40,7 @@ pub type OsmosisVaultContract<'a> =
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -48,19 +48,6 @@ pub fn instantiate(
 
     let admin_addr = deps.api.addr_validate(&msg.admin)?;
     let config = msg.config.check(deps.as_ref())?;
-
-    // Validate that 10 osmo for vault token creation are sent
-    let osmo_amount = info
-        .funds
-        .iter()
-        .find(|coin| coin.denom == "uosmo")
-        .map(|coin| coin.amount)
-        .unwrap_or_default();
-    if osmo_amount < Uint128::new(10_000_000) {
-        return Err(ContractError::from(
-            "A minimum of 10_000_000 uosmo must be sent to create the vault token",
-        ));
-    }
 
     // Create the pool object
     let pool = OsmosisPool::new(msg.pool_id, deps.as_ref())?;

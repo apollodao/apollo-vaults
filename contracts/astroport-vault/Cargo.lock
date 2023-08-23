@@ -59,7 +59,7 @@ dependencies = [
  "cw-storage-plus",
  "cw-utils",
  "cw-vault-standard",
- "cw-vault-token 0.2.0-rc.1",
+ "cw-vault-token",
  "cw20",
  "cw20-base",
  "derive_builder",
@@ -97,7 +97,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-dex",
  "cw-vault-standard",
- "cw-vault-token 0.1.0",
+ "cw-vault-token",
  "cw2",
  "cw20-base",
  "semver",
@@ -116,7 +116,7 @@ dependencies = [
  "apollo-cw-asset",
  "cosmwasm-std",
  "cw-storage-plus",
- "cw-vault-token 0.2.0-rc.1",
+ "cw-vault-token",
  "serde",
 ]
 
@@ -399,21 +399,6 @@ dependencies = [
 
 [[package]]
 name = "cw-vault-token"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ead4f3aad0bf40c72cd1549f5803be1884ef4a9f6684542285243964c0851b85"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-utils",
- "cw20",
- "cw20-base",
- "osmosis-std 0.14.0",
- "thiserror",
-]
-
-[[package]]
-name = "cw-vault-token"
 version = "0.2.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddc76f1f9ffdc76f25577450c69f9aa3c2a3134b6608028159f21a50bbb2ee52"
@@ -423,7 +408,7 @@ dependencies = [
  "cw-utils",
  "cw20",
  "cw20-base",
- "osmosis-std 0.17.0-rc0",
+ "osmosis-std",
  "thiserror",
 ]
 
@@ -802,46 +787,18 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "osmosis-std"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fc0a9075efd64ed5a8be3bf134cbf1080570d68384f2ad58ffaac6c00d063fd"
-dependencies = [
- "chrono",
- "cosmwasm-std",
- "osmosis-std-derive 0.13.2",
- "prost",
- "prost-types",
- "schemars",
- "serde",
- "serde-cw-value",
-]
-
-[[package]]
-name = "osmosis-std"
 version = "0.17.0-rc0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0b022b748710ecdf1adc6a124c3bef29f17ef05e7fa1260a08889d1d53f9cc5"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive 0.16.2",
+ "osmosis-std-derive",
  "prost",
  "prost-types",
  "schemars",
  "serde",
  "serde-cw-value",
-]
-
-[[package]]
-name = "osmosis-std-derive"
-version = "0.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a455e262a6fdfd3914f3a4e11e6bc0ce491901cb9d507d7856d7ef6e129e90c6"
-dependencies = [
- "itertools",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

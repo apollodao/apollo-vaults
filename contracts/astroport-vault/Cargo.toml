@@ -39,7 +39,7 @@ apollo-vault = {path = "../../packages/apollo-vault"}
 cw-vault-standard = { version = "0.2.0", features = ["cw4626"]}
 cw-dex = { version = "0.1.1", features = ["astroport"]}
 astroport-types = "0.1.0"
-cw-vault-token = "0.1.0"
+cw-vault-token = "0.2.0-rc.1"
 apollo-cw-asset = "0.1.0"
 cw20-base = { version = "1.0.1", features = ["library"] }
 semver = "1"
