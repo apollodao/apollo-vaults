@@ -61,16 +61,8 @@ fn max_of_all_coins(coins: &[Vec<Coin>]) -> Vec<Coin> {
 }
 
 impl<'a> OsmosisVaultRobot<'a, OsmosisTestApp> {
-    pub fn setup(&self, admin: &SigningAccount) -> &Self {
-        self.send_native_tokens(
-            // LP tokens to vault to allow it to create new Locks on unlock
-            // TODO: Remove this after mainnet chain upgrade
-            &admin,
-            &self.vault_addr,
-            1000000u32,
-            self.query_info().base_token,
-        )
-        .whitelist_address_for_force_unlock(&self.vault_addr)
+    pub fn setup(&self, _admin: &SigningAccount) -> &Self {
+        self.whitelist_address_for_force_unlock(&self.vault_addr)
     }
 }
 
@@ -201,7 +193,7 @@ where
                 &init_msg,
                 Some(&admin.address()),
                 Some("Apollo Vault"),
-                &[Coin::new(10_000_000u128, "uosmo")],
+                &[],
                 &admin,
             )
             .unwrap()
